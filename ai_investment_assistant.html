@@ -1675,49 +1675,11 @@ function setHero(title, desc, fade) {
 }
 
 /* ── AI-powered hero greeting ── */
-async function initUI() {
+function initUI() {
   updateClock();
-
-  // 1. Show lively default immediately — zero wait
   const session = getSession();
   const instant = getInstantDefault(session);
   setHero(instant.title, instant.desc, false);
-
-  // Add subtle pulse to desc to hint that AI is refreshing
-  const descEl = document.getElementById('heroDesc');
-  descEl.classList.add('loading');
-
-  // 2. Silently fetch AI-generated version in background
-  const watchlistStr = WATCHLIST.map(s => s.name + '(' + s.code + ')').join('、');
-  const sessionHint = {
-    premarket: '現在是開盤前時段',
-    open:      '現在市場正在交易中',
-    post:      '現在是收盤後時段',
-    night:     '現在是非交易時段（夜間）',
-    weekend:   '現在是週末非交易日'
-  }[session];
-
-  const systemPrompt = '你是一位「會主動陪伴用戶觀察市場的 AI 投資助理」。\n'
-    + '你的角色不是新聞播報員，而是像一位正在陪用戶一起看盤、整理市場重點的智慧助手。\n\n'
-    + '請根據：用戶自選股、即時市場資訊（請用 web_search 搜尋 Yahoo 台股新聞或鉅亨網）、熱門新聞與市場題材，生成具有即時感、陪伴感的市場摘要。\n\n'
-    + '文案風格：自然口語、有陪伴感、像聊天提醒，不要像新聞標題或投顧 call 訊，不要保證獲利，允許最多 1 個 emoji（👀 📈 🔥 💡）。\n\n'
-    + '輸出純 JSON（不加任何 markdown）：\n'
-    + '{ "title": "標題 12~18 字，口語化有陪伴感", "desc": "內容 2~3 行 45~90 字，含市場動態、題材、自選股關聯、引導感" }\n\n'
-    + '避免標題含：重大警訊、緊急通知、快逃、飆股、必漲。';
-
-  try {
-    const raw = await fetchGemini(buildGeminiBody(systemPrompt, sessionHint + '。用戶自選股：' + watchlistStr + '。請搜尋最新台股動態後生成摘要。', 300));
-    const parsed = extractJSON(raw);
-    // 3. Fade in AI result only if it's meaningfully different from the default
-    if (parsed && parsed.title && parsed.desc && parsed.title !== instant.title) {
-      setHero(parsed.title, parsed.desc, true);
-    } else {
-      // Just stop the pulse
-      descEl.classList.remove('loading');
-    }
-  } catch(e) {
-    descEl.classList.remove('loading');
-  }
 }
 
 /* ══════════════════════════════════════════
@@ -1985,9 +1947,7 @@ function initMarketSummary() {
   setTimeout(() => updateMarketSummary(MOCK_MARKET_DATA), 800);
 }
 
-initUI().then(() => {
-  setTimeout(pushDailySummary, 600);
-});
+initUI();
 initMarketSummary();
 setInterval(updateClock, 60000);
 
