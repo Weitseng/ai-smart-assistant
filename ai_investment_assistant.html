@@ -3386,7 +3386,8 @@ function buildGeminiBody(systemPrompt, userContent, maxTokens, useWebSearch = tr
     generationConfig: { maxOutputTokens: maxTokens }
   };
   if (systemPrompt) body.systemInstruction = { parts: [{ text: systemPrompt }] };
-  if (useWebSearch) body.tools = [{ googleSearch: {} }];
+  // googleSearch grounding disabled — free tier quota too restrictive
+  // if (useWebSearch) body.tools = [{ googleSearch: {} }];
   return body;
 }
 
@@ -3406,11 +3407,16 @@ async function fetchGemini(body) {
       await new Promise(r => setTimeout(r, DELAYS[attempt]));
       continue;
     }
-    if (!resp.ok) throw new Error(`API ${resp.status}`);
+    if (!resp.ok) {
+      let detail = `API ${resp.status}`;
+      try { const e = await resp.json(); detail = `API ${resp.status}: ${e?.error?.message || e?.error?.status || ''}`; } catch(_) {}
+      console.error('[Gemini error]', detail, body);
+      throw new Error(detail);
+    }
     const data = await resp.json();
     return extractGeminiText(data);
   }
-  throw new Error('API 429');
+  throw new Error('API 429: rate limit, please retry later');
 }
 
 /* ── Global compare state ──*/
