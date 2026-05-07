@@ -1255,68 +1255,6 @@
       animation: mktSkel 1.5s ease-in-out infinite;
     }
 
-    /* ── API Key Banner ── */
-    .apikey-banner {
-      display: none;
-      align-items: center;
-      gap: 8px;
-      background: #fff8e1;
-      border-bottom: 1px solid #ffe082;
-      padding: 8px 14px;
-      flex-shrink: 0;
-    }
-    .apikey-banner.show { display: flex; }
-    .apikey-banner-text {
-      font-size: 12px; color: #7a5800;
-      font-family: 'Noto Sans TC', sans-serif; flex: 1;
-    }
-    .apikey-banner-btn {
-      background: #1a2f6e; color: #fff;
-      border: none; border-radius: 8px;
-      padding: 5px 12px; font-size: 12px; font-weight: 600;
-      font-family: 'Noto Sans TC', sans-serif; cursor: pointer;
-      white-space: nowrap;
-    }
-    /* ── API Key Modal ── */
-    .apikey-modal-overlay {
-      position: absolute; inset: 0;
-      background: rgba(0,0,0,0.45); z-index: 200;
-      display: none; align-items: center; justify-content: center;
-    }
-    .apikey-modal-overlay.open { display: flex; }
-    .apikey-modal {
-      background: #fff; border-radius: 18px;
-      padding: 24px 20px; width: 320px; margin: 0 16px;
-      box-shadow: 0 8px 40px rgba(0,0,0,0.22);
-    }
-    .apikey-modal-title {
-      font-size: 16px; font-weight: 700; color: var(--navy);
-      font-family: 'Noto Sans TC', sans-serif; margin-bottom: 6px;
-    }
-    .apikey-modal-desc {
-      font-size: 12px; color: var(--text-hint);
-      font-family: 'Noto Sans TC', sans-serif; margin-bottom: 16px; line-height: 1.6;
-    }
-    .apikey-modal input {
-      width: 100%; border: 1.5px solid var(--divider);
-      border-radius: 10px; padding: 11px 13px;
-      font-size: 13px; font-family: 'Noto Sans TC', sans-serif;
-      color: var(--navy); background: var(--bg-input);
-      outline: none; margin-bottom: 12px;
-    }
-    .apikey-modal input:focus { border-color: #2563eb; }
-    .apikey-modal-actions { display: flex; gap: 8px; }
-    .apikey-modal-cancel {
-      flex: 1; border: 1.5px solid var(--divider); background: none;
-      border-radius: 10px; padding: 10px; font-size: 13px; font-weight: 600;
-      font-family: 'Noto Sans TC', sans-serif; color: var(--text-sub); cursor: pointer;
-    }
-    .apikey-modal-confirm {
-      flex: 2; background: var(--blue-btn); color: #fff;
-      border: none; border-radius: 10px; padding: 10px;
-      font-size: 13px; font-weight: 700;
-      font-family: 'Noto Sans TC', sans-serif; cursor: pointer;
-    }
   </style>
 </head>
 <body>
@@ -1325,28 +1263,6 @@
 
     <!-- ═══ FIXED HEADER ═══ -->
     <div class="fixed-header">
-    <!-- API Key Banner -->
-    <div class="apikey-banner" id="apikeyBanner">
-      <span class="apikey-banner-text">⚠️ 需要設定 API Key 才能使用 AI 功能</span>
-      <button class="apikey-banner-btn" onclick="openApiKeyModal()">設定</button>
-    </div>
-
-    <!-- API Key Modal -->
-    <div class="apikey-modal-overlay" id="apikeyModal">
-      <div class="apikey-modal">
-        <div class="apikey-modal-title">🔑 設定 Anthropic API Key</div>
-        <div class="apikey-modal-desc">
-          請前往 <b>console.anthropic.com</b> 取得 API Key。<br>
-          Key 僅儲存於本機，不會上傳至任何伺服器。
-        </div>
-        <input type="password" id="apikeyInput" placeholder="sk-ant-..." autocomplete="off" />
-        <div class="apikey-modal-actions">
-          <button class="apikey-modal-cancel" onclick="closeApiKeyModal()">取消</button>
-          <button class="apikey-modal-confirm" onclick="saveApiKey()">儲存並啟用</button>
-        </div>
-      </div>
-    </div>
-
       <div class="status-bar">
         <span class="status-time" id="clock">9:41</span>
         <div class="status-icons">
@@ -1705,32 +1621,8 @@ async function initUI() {
     + '{ "title": "標題 12~18 字，口語化有陪伴感", "desc": "內容 2~3 行 45~90 字，含市場動態、題材、自選股關聯、引導感" }\n\n'
     + '避免標題含：重大警訊、緊急通知、快逃、飆股、必漲。';
 
-  try {
-    const resp = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'anthropic-dangerous-direct-browser-access': 'true', ...(getApiKey() ? { 'x-api-key': getApiKey() } : {}) },
-      body: JSON.stringify({
-        model: AI_MODEL,
-        max_tokens: 300,
-        system: systemPrompt,
-        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-        messages: [{ role: 'user', content: sessionHint + '。用戶自選股：' + watchlistStr + '。請搜尋最新台股動態後生成摘要。' }]
-      })
-    });
-    if (!resp.ok) throw new Error('API ' + resp.status);
-    const data = await resp.json();
-    const raw = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('').trim();
-    const parsed = extractJSON(raw);
-    // 3. Fade in AI result only if it's meaningfully different from the default
-    if (parsed && parsed.title && parsed.desc && parsed.title !== instant.title) {
-      setHero(parsed.title, parsed.desc, true);
-    } else {
-      // Just stop the pulse
-      descEl.classList.remove('loading');
-    }
-  } catch(e) {
-    descEl.classList.remove('loading');
-  }
+  /* Using mock data for offline mode */
+  descEl.classList.remove('loading');
 }
 
 /* ══════════════════════════════════════════
@@ -2061,24 +1953,7 @@ async function pushDailySummary() {
     + '"followUps":["\u6700\u71b1\u9580\u6642\u4e8b\u8a71\u98981\uff0815\u5b57\u5167\uff09","\u6700\u71b1\u9580\u6642\u4e8b\u8a71\u98982\uff0815\u5b57\u5169\uff09","\u6700\u71b1\u9580\u6642\u4e8b\u8a71\u98983\uff0815\u5b57\u5167\uff09"] }';
 
   let result = null;
-  try {
-    const resp = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'anthropic-dangerous-direct-browser-access': 'true', ...(getApiKey() ? { 'x-api-key': getApiKey() } : {}) },
-      body: JSON.stringify({
-        model: AI_MODEL,
-        max_tokens: 900,
-        system: sysPrompt,
-        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-        messages: [{ role: 'user', content: '\u81ea\u9078\u80a1\uff1a' + watchlistStr + '\u3002\u65e5\u671f\uff1a' + today + '\u3002\u8acb\u5b8c\u6210\u76e4\u5f8c\u61f6\u4eba\u5305\u5206\u6790\u3002' }]
-      })
-    });
-    if (resp.ok) {
-      const data = await resp.json();
-      const raw = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('').trim();
-      result = extractJSON(raw);
-    }
-  } catch(e) { /* fallback */ }
+  /* Using mock data for offline mode */
 
   /* ── 組裝最終 HTML ── */
   const stocks = (result && Array.isArray(result.stocks) && result.stocks.length)
@@ -2226,23 +2101,52 @@ async function callCompareAI(tickers) {
     + schema
     + '\n\n查不到的數據請根據同產業合理估算,scores 為 1-10 整數,ranking 請依綜合評分由高到低排列。';
 
-  const resp = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'anthropic-dangerous-direct-browser-access': 'true', ...(getApiKey() ? { 'x-api-key': getApiKey() } : {}) },
-    body: JSON.stringify({
-      model: AI_MODEL,
-      max_tokens: 2048,
-      system: systemPrompt,
-      tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-      messages: [{ role: 'user', content: '比較分析：' + tickerList }]
-    })
-  });
-  if (!resp.ok) throw new Error('API ' + resp.status);
-  const data = await resp.json();
-  const raw = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('').trim();
-  console.log('[CompareAI raw]', raw.slice(0, 400));
-  const parsed = extractJSON(raw);
-  return normalizeCompareReport(parsed, tickers);
+  /* Using mock compare data for offline mode */
+  await new Promise(r => setTimeout(r, 1200));
+
+  // Return a basic mock compare report
+  const mockReport = {
+    tickers: tickers,
+    reportDate: today,
+    growth: {
+      cagr: tickers.reduce((o,t)=>{o[t]='+15.5%';return o;},{}),
+      revenue: [
+        Object.assign({year:'2023'}, tickers.reduce((o,t)=>{o[t]='1000億';return o;},{})),
+        Object.assign({year:'2024'}, tickers.reduce((o,t)=>{o[t]='1250億';return o;},{})),
+        Object.assign({year:'2025'}, tickers.reduce((o,t)=>{o[t]='1450億';return o;},{}))
+      ]
+    },
+    profitability: {
+      rows: [
+        Object.assign({metric:'毛利率'}, {'2024':tickers.reduce((r,t)=>{r[t]='45%';return r;},{}), '2025':tickers.reduce((r,t)=>{r[t]='46%';return r;},{}), '2026LTM':tickers.reduce((r,t)=>{r[t]='47%';return r;},{})}),
+        Object.assign({metric:'營業利益率'}, {'2024':tickers.reduce((r,t)=>{r[t]='38%';return r;},{}), '2025':tickers.reduce((r,t)=>{r[t]='39%';return r;},{}), '2026LTM':tickers.reduce((r,t)=>{r[t]='40%';return r;},{})}),
+        Object.assign({metric:'淨利率'}, {'2024':tickers.reduce((r,t)=>{r[t]='32%';return r;},{}), '2025':tickers.reduce((r,t)=>{r[t]='33%';return r;},{}), '2026LTM':tickers.reduce((r,t)=>{r[t]='34%';return r;},{}})
+      ]
+    },
+    valuation: {
+      pe: tickers.reduce((o,t)=>{o[t]={current:'20x',median3y:'18x'};return o;},{}),
+      pb: tickers.reduce((o,t)=>{o[t]={current:'5.5x',median3y:'4.2x'};return o;},{}),
+      volatility12m: tickers.reduce((o,t)=>{o[t]='25%';return o;},{}),
+      valuation_signal: tickers.reduce((o,t)=>{o[t]='合理';return o;},{})
+    },
+    risk: {
+      debt_ratio: [
+        Object.assign({year:'2023'}, tickers.reduce((o,t)=>{o[t]='22%';return o;},{})),
+        Object.assign({year:'2024'}, tickers.reduce((o,t)=>{o[t]='20%';return o;},{})),
+        Object.assign({year:'2025'}, tickers.reduce((o,t)=>{o[t]='18%';return o;},{}))
+      ],
+      interest_coverage: tickers.reduce((o,t)=>{o[t]='8.5x';return o;},{})
+    },
+    radar: {
+      dimensions: ['成長性','獲利能力','財務安全','估值吸引力','股利收益'],
+      scores: tickers.reduce((o,t)=>{o[t]=[7,8,6,7,5];return o;},{})
+    },
+    ranking: tickers.map((t,i)=>({rank:i+1, ticker:t, reason:'綜合評分排名'})),
+    highlights: tickers.reduce((o,t)=>{o[t]={best:'基本面穩健，成長動能持續',concern:'估值偏高，短期風險需關注'};return o;},{}),
+    disclaimer: '本分析僅供參考，不構成投資建議。'
+  };
+
+  return normalizeCompareReport(mockReport, tickers);
 }
 
 /* ── Normalize compare report: fix key mismatches, fill missing data ── */
@@ -3423,154 +3327,226 @@ function buildStockChips(stocks) {
    ANTHROPIC API — real-time stock AI
 ══════════════════════════════════════════ */
 
-/* ── API Key management ── */
-function getApiKey() {
-  return localStorage.getItem('anthropic_api_key') || '';
-}
-function openApiKeyModal() {
-  const overlay = document.getElementById('apikeyModal');
-  document.querySelector('.phone').appendChild(overlay);
-  overlay.classList.add('open');
-  const input = document.getElementById('apikeyInput');
-  input.value = getApiKey();
-  setTimeout(() => input.focus(), 80);
-}
-function closeApiKeyModal() {
-  document.getElementById('apikeyModal').classList.remove('open');
-}
-function saveApiKey() {
-  const val = document.getElementById('apikeyInput').value.trim();
-  if (!val.startsWith('sk-')) { alert('請輸入有效的 API Key（以 sk- 開頭）'); return; }
-  localStorage.setItem('anthropic_api_key', val);
-  closeApiKeyModal();
-  checkApiKeyBanner();
-  showToast('API Key 已儲存 ✓');
-}
-function checkApiKeyBanner() {
-  const banner = document.getElementById('apikeyBanner');
-  if (!banner) return;
-  if (getApiKey()) { banner.classList.remove('show'); }
-  else { banner.classList.add('show'); }
-}
-document.addEventListener('DOMContentLoaded', () => checkApiKeyBanner());
+/* ── Mock Stock Data for Offline Mode ── */
+const MOCK_STOCK_DATA = [
+  {
+    ticker: "台積電 2330",
+    name: "台灣積體電路製造股份有限公司",
+    rating: "增加持股",
+    ratingColor: "buy",
+    closePrice: "1065",
+    change: "+1.43%",
+    targetPrice: "1250",
+    prevTargetPrice: "1180",
+    targetUpgrade: "+5.9",
+    upside: "+17.4",
+    bullets: ["CoWoS封裝月產能擴至10萬片，供不應求", "2025年EPS估81元，YoY +28%", "外資連買15日，持股比例達78.4%"],
+    trading: { marketCap: "27.6兆", shares: "259.3億股", foreignOwn: "78.4%", avgVol: "42,318張", week52High: "1,080", week52Low: "620" },
+    performance: [{ period: "3M", abs: "+18.2%", rel: "+12.4%" }, { period: "6M", abs: "+32.5%", rel: "+24.1%" }, { period: "12M", abs: "+54.8%", rel: "+38.7%" }],
+    technical: { ma5: "1055", ma10: "1028", ma20: "998", ma60: "920", kd_k: 68, kd_d: 61, rsi14: 63, macd: "1.8", macd_signal: "1.1", macd_hist: "0.7", support: "1020", resistance: "1100", trend: "緩步上漲", summary: "多頭排列，KD黃金交叉，短期偏多" },
+    chips: { foreign_3d: 18432, foreign_10d: 62100, foreign_hold_pct: "78.4%", trust_3d: 2100, trust_10d: 8500, dealer_3d: -450, dealer_10d: -1200, total_3d: 20082, margin_balance: 25000, short_balance: 3200, summary: "外資連買，投信同步加碼，籌碼集中偏多" },
+    fundamental: { pe_ratio: "20.1x", pb_ratio: "7.8x", dividend_yield: "1.8%", dividend_per_share: "14元", roe: "29.8%", roa: "18.4%", gross_margin: "55.8%", op_margin: "42.1%", net_margin: "38.9%", revenue_yoy: "+34.2%", eps_yoy: "+28.0%", debt_ratio: "28.3%", summary: "獲利能力頂尖，殖利率穩健，負債健康" },
+    eps: { years: ["2024", "2025F", "2026F"], q1: [17.2, 21.5, 24.0], q2: [20.1, 23.8, 26.5], q3: [23.0, 26.2, 29.0], q4: [19.8, 22.5, 25.0], annual: [80.1, 94.0, 104.5] },
+    news: [{ title: "台積電3奈米良率突破90%", source: "鉅亨網", date: "05/06", summary: "客戶需求強勁，CoWoS產能持續擴張" }, { title: "外資上調台積電目標價至1250", source: "MoneyDJ", date: "05/05", summary: "摩根士丹利重申增持評等" }, { title: "台積電Q1營收創歷史新高", source: "工商時報", date: "05/04", summary: "AI晶片需求帶動整體業績成長" }],
+    analysis: "AI題材與先進封裝需求雙輪驅動，長線基本面穩健。短期因美元走弱與外資買超，技術面偏多。",
+    relatedTopics: ["CoWoS封裝展望", "AI半導體需求分析", "台積電 vs 三星", "聯電比較分析"],
+    relatedStocks: [{ name: "聯發科", code: "2454", price: "1180", change: "+0.85%" }, { name: "日月光投控", code: "3711", price: "186", change: "+1.09%" }, { name: "聯電", code: "2303", price: "54.9", change: "-0.36%" }],
+    hasKgi: true
+  },
+  {
+    ticker: "聯發科 2454",
+    name: "聯發科技股份有限公司",
+    rating: "持有",
+    ratingColor: "hold",
+    closePrice: "1180",
+    change: "+0.85%",
+    targetPrice: "1320",
+    prevTargetPrice: "1280",
+    targetUpgrade: "+3.1",
+    upside: "+11.9",
+    bullets: ["旗艦晶片4奈米制程領先，AI手機出貨量持續成長", "2025年EPS估45元，YoY +12%", "法人減持但基本面仍穩健"],
+    trading: { marketCap: "3.8兆", shares: "32.3億股", foreignOwn: "62.1%", avgVol: "28,500張", week52High: "1250", week52Low: "780" },
+    performance: [{ period: "3M", abs: "+12.5%", rel: "+8.9%" }, { period: "6M", abs: "+24.3%", rel: "+18.5%" }, { period: "12M", abs: "+38.2%", rel: "+26.7%" }],
+    technical: { ma5: "1175", ma10: "1152", ma20: "1128", ma60: "1080", kd_k: 62, kd_d: 58, rsi14: 59, macd: "0.9", macd_signal: "0.7", macd_hist: "0.2", support: "1140", resistance: "1220", trend: "震盪整理", summary: "MA多頭排列，但KD鈍化，短期需觀察" },
+    chips: { foreign_3d: 8200, foreign_10d: 22100, foreign_hold_pct: "62.1%", trust_3d: 1850, trust_10d: 5200, dealer_3d: -320, dealer_10d: -850, total_3d: 9730, margin_balance: 12000, short_balance: 1500, summary: "外資靜觀其變，投信持續加碼，籌碼面尚可" },
+    fundamental: { pe_ratio: "26.2x", pb_ratio: "9.1x", dividend_yield: "1.2%", dividend_per_share: "14元", roe: "32.5%", roa: "22.1%", gross_margin: "48.2%", op_margin: "38.5%", net_margin: "35.2%", revenue_yoy: "+28.5%", eps_yoy: "+12.0%", debt_ratio: "15.8%", summary: "獲利能力卓越，ROE領先同業，負債低位" },
+    eps: { years: ["2024", "2025F", "2026F"], q1: [10.2, 11.5, 12.8], q2: [11.5, 12.8, 14.2], q3: [12.0, 13.5, 15.0], q4: [10.8, 11.8, 13.2], annual: [44.5, 49.6, 55.2] },
+    news: [{ title: "聯發科AI手機晶片出貨超預期", source: "工商時報", date: "05/06", summary: "安卓陣營積極採用旗艦AI方案" }, { title: "天風國際上調評等至買進", source: "MoneyDJ", date: "05/04", summary: "目標價上修至1350元" }, { title: "聯發科Q1營收環比增長18%", source: "鉅亨網", date: "05/02", summary: "手機與物聯網業務齊頭並進" }],
+    analysis: "AI晶片市場擴張，聯發科卡位優勢明顯。短期股價盤整，但中線買點已現。",
+    relatedTopics: ["AI手機晶片競爭", "天數與高通比較", "物聯網業務展望", "2025年出貨預測"],
+    relatedStocks: [{ name: "台積電", code: "2330", price: "1065", change: "+1.43%" }, { name: "高通", code: "QCOM", price: "168", change: "-0.45%" }, { name: "愛普科技", code: "3105", price: "285", change: "+2.12%" }],
+    hasKgi: true
+  },
+  {
+    ticker: "鴻海 2317",
+    name: "鴻海精密工業股份有限公司",
+    rating: "持有",
+    ratingColor: "hold",
+    closePrice: "235.5",
+    change: "+0.64%",
+    targetPrice: "260",
+    prevTargetPrice: "255",
+    targetUpgrade: "+1.9",
+    upside: "+10.4",
+    bullets: ["EMS代工穩步復甦，iPhone 17需求樂觀", "2025年EPS估12.5元，YoY +8%", "MIH電動車商業化進度加速"],
+    trading: { marketCap: "1.8兆", shares: "77.5億股", foreignOwn: "35.2%", avgVol: "156,000張", week52High: "265", week52Low: "195" },
+    performance: [{ period: "3M", abs: "+8.3%", rel: "+5.1%" }, { period: "6M", abs: "+18.5%", rel: "+12.4%" }, { period: "12M", abs: "+22.1%", rel: "+10.8%" }],
+    technical: { ma5: "233", ma10: "228", ma20: "220", ma60: "205", kd_k: 55, kd_d: 52, rsi14: 54, macd: "0.4", macd_signal: "0.3", macd_hist: "0.1", support: "225", resistance: "250", trend: "溫和上升", summary: "MA多頭但斜率平緩，短期無強勢" },
+    chips: { foreign_3d: 3200, foreign_10d: 8500, foreign_hold_pct: "35.2%", trust_3d: 920, trust_10d: 2100, dealer_3d: -250, dealer_10d: -680, total_3d: 3870, margin_balance: 18000, short_balance: 2200, summary: "外資靜觀，投信緩步加碼，融資居高不下" },
+    fundamental: { pe_ratio: "18.8x", pb_ratio: "1.2x", dividend_yield: "3.8%", dividend_per_share: "9元", roe: "6.5%", roa: "4.2%", gross_margin: "8.5%", op_margin: "4.2%", net_margin: "3.8%", revenue_yoy: "+15.2%", eps_yoy: "+8.0%", debt_ratio: "52.1%", summary: "代工行業低利潤，但現金流穩健，殖利率誘人" },
+    eps: { years: ["2024", "2025F", "2026F"], q1: [2.8, 3.1, 3.4], q2: [3.2, 3.5, 3.8], q3: [3.5, 3.8, 4.1], q4: [3.0, 3.2, 3.5], annual: [12.5, 13.6, 14.8] },
+    news: [{ title: "鴻海斥資擴建鄭州廠", source: "工商時報", date: "05/05", summary: "為新一代iPhone量產做準備" }, { title: "MIH造車計畫商業化加速", source: "MoneyDJ", date: "05/03", summary: "預計2026年第一款車型上市" }, { title: "鴻海Q1毛利率小幅提升", source: "鉅亨網", date: "05/01", summary: "iPhone訂單超預期提升經營效率" }],
+    analysis: "代工景氣溫和復甦，新興業務逐步貢獻。EPS穩步成長，但估值偏低，適合穩健投資人。",
+    relatedTopics: ["iPhone 17代工進度", "MIH電動車進展", "越南廠擴產計畫", "EMS競爭態勢"],
+    relatedStocks: [{ name: "台積電", code: "2330", price: "1065", change: "+1.43%" }, { name: "和碩聯合", code: "4938", price: "85", change: "-1.25%" }, { name: "緯穎", code: "6669", price: "385", change: "+2.85%" }],
+    hasKgi: true
+  },
+  {
+    ticker: "廣達 2382",
+    name: "廣達電腦股份有限公司",
+    rating: "增加持股",
+    ratingColor: "buy",
+    closePrice: "195.5",
+    change: "+2.35%",
+    targetPrice: "235",
+    prevTargetPrice: "220",
+    targetUpgrade: "+6.8",
+    upside: "+20.2",
+    bullets: ["AI伺服器訂單爆炸性成長，產能供不應求", "2025年EPS估18.2元，YoY +35%", "法人連買12日，籌碼面強勢"],
+    trading: { marketCap: "1.6兆", shares: "82.0億股", foreignOwn: "54.8%", avgVol: "32,100張", week52High: "210", week52Low: "125" },
+    performance: [{ period: "3M", abs: "+32.5%", rel: "+28.1%" }, { period: "6M", abs: "+65.2%", rel: "+58.9%" }, { period: "12M", abs: "+82.1%", rel: "+72.5%" }],
+    technical: { ma5: "192", ma10: "180", ma20: "165", ma60: "140", kd_k: 78, kd_d: 72, rsi14: 72, macd: "2.1", macd_signal: "1.5", macd_hist: "0.6", support: "180", resistance: "210", trend: "強勢上漲", summary: "K線突破多重壓力，KD高檔但未背離，買超主導" },
+    chips: { foreign_3d: 12850, foreign_10d: 38500, foreign_hold_pct: "54.8%", trust_3d: 3200, trust_10d: 9800, dealer_3d: 450, dealer_10d: 1200, total_3d: 16500, margin_balance: 8500, short_balance: 800, summary: "外資狂買，投信同步加碼，籌碼面極強" },
+    fundamental: { pe_ratio: "10.7x", pb_ratio: "2.8x", dividend_yield: "2.1%", dividend_per_share: "5元", roe: "26.2%", roa: "21.5%", gross_margin: "12.5%", op_margin: "10.8%", net_margin: "9.5%", revenue_yoy: "+45.8%", eps_yoy: "+35.0%", debt_ratio: "18.5%", summary: "獲利爆炸性成長，估值仍有想像空間，負債健康" },
+    eps: { years: ["2024", "2025F", "2026F"], q1: [3.8, 5.2, 6.5], q2: [4.2, 5.8, 7.2], q3: [4.5, 6.2, 7.8], q4: [3.5, 5.0, 6.0], annual: [16.0, 22.2, 27.5] },
+    news: [{ title: "廣達AI伺服器訂單再創新高", source: "鉅亨網", date: "05/06", summary: "客戶需求強勁，產能全力衝刺" }, { title: "瑞銀重申買進，目標價上調至235", source: "MoneyDJ", date: "05/05", summary: "AI超級週期才剛開始" }, { title: "廣達鄭州新廠Q2投產", source: "工商時報", date: "05/04", summary: "AI伺服器產能將翻倍成長" }],
+    analysis: "AI伺服器浪潮核心受惠者，訂單能見度強。短期漲幅雖大，但基本面支撐持續向上。",
+    relatedTopics: ["AI伺服器市場規模", "與鴻海技術比較", "產能擴張計畫", "下游廠商需求"],
+    relatedStocks: [{ name: "緯穎", code: "6669", price: "385", change: "+2.85%" }, { name: "台積電", code: "2330", price: "1065", change: "+1.43%" }, { name: "聯發科", code: "2454", price: "1180", change: "+0.85%" }],
+    hasKgi: true
+  },
+  {
+    ticker: "緯穎 6669",
+    name: "緯穎科技股份有限公司",
+    rating: "增加持股",
+    ratingColor: "buy",
+    closePrice: "385",
+    change: "+2.85%",
+    targetPrice: "480",
+    prevTargetPrice: "450",
+    targetUpgrade: "+6.7",
+    upside: "+24.7",
+    bullets: ["AI伺服器與邊緣運算雙引擎增長，訂單能見度強", "2025年EPS估28.5元，YoY +42%", "外資持股創新高，機構持股比例達82%"],
+    trading: { marketCap: "5.2兆", shares: "135.0億股", foreignOwn: "82.0%", avgVol: "18,500張", week52High: "420", week52Low: "220" },
+    performance: [{ period: "3M", abs: "+38.2%", rel: "+33.5%" }, { period: "6M", abs: "+72.5%", rel: "+65.8%" }, { period: "12M", abs: "+95.2%", rel: "+85.1%" }],
+    technical: { ma5: "375", ma10: "350", ma20: "320", ma60: "280", kd_k: 82, kd_d: 78, rsi14: 75, macd: "3.2", macd_signal: "2.2", macd_hist: "1.0", support: "360", resistance: "400", trend: "強勢漲升", summary: "連漲突破，KD高檔，RSI超買，宜留意獲利了結" },
+    chips: { foreign_3d: 22500, foreign_10d: 68000, foreign_hold_pct: "82.0%", trust_3d: 5800, trust_10d: 18200, dealer_3d: 1200, dealer_10d: 3500, total_3d: 29500, margin_balance: 3200, short_balance: 280, summary: "外資主導，投信加碼，融資低位，籌碼極強" },
+    fundamental: { pe_ratio: "13.5x", pb_ratio: "4.2x", dividend_yield: "1.8%", dividend_per_share: "8元", roe: "31.2%", roa: "25.8%", gross_margin: "18.5%", op_margin: "16.2%", net_margin: "14.8%", revenue_yoy: "+52.1%", eps_yoy: "+42.0%", debt_ratio: "22.1%", summary: "成長性頂尖，ROE卓越，負債管理得當，未來潛力大" },
+    eps: { years: ["2024", "2025F", "2026F"], q1: [5.8, 7.8, 10.2], q2: [6.5, 8.8, 11.5], q3: [7.2, 9.5, 12.2], q4: [5.5, 7.5, 9.8], annual: [25.0, 35.6, 44.7] },
+    news: [{ title: "緯穎AI伺服器訂單簽單再創新高", source: "工商時報", date: "05/06", summary: "全年訂單能見度至少六個月以上" }, { title: "摩根士丹利上調目標價至480元", source: "MoneyDJ", date: "05/05", summary: "AI浪潮才剛進入加速期" }, { title: "緯穎泰國廠投產，產能倍增", source: "鉅亨網", date: "05/03", summary: "應對全球AI伺服器需求爆發" }],
+    analysis: "AI基礎建設龍頭，成長動能強勁。股價大幅上漲後，短期宜觀察整固，中長線前景看好。",
+    relatedTopics: ["AI伺服器供應鏈", "超微與英特爾動態", "伺服器散熱挑戰", "全球資料中心擴張"],
+    relatedStocks: [{ name: "廣達", code: "2382", price: "195.5", change: "+2.35%" }, { name: "台積電", code: "2330", price: "1065", change: "+1.43%" }, { name: "聯發科", code: "2454", price: "1180", change: "+0.85%" }],
+    hasKgi: true
+  },
+  {
+    ticker: "元大台灣50 0050",
+    name: "元大寶來台灣卓越50基金",
+    rating: "持有",
+    ratingColor: "hold",
+    closePrice: "175.2",
+    change: "+0.92%",
+    targetPrice: "195",
+    prevTargetPrice: "190",
+    targetUpgrade: "+2.6",
+    upside: "+11.3",
+    bullets: ["台灣大型股代表ETF，成分股權重台積電34.5%", "2025年現金殖利率2.4%，年度配息穩健", "規模超新台幣3500億，流動性最佳"],
+    trading: { marketCap: "—", shares: "—", foreignOwn: "62.5%", avgVol: "125,000張", week52High: "190", week52Low: "142" },
+    performance: [{ period: "3M", abs: "+15.8%", rel: "+10.2%" }, { period: "6M", abs: "+28.5%", rel: "+22.1%" }, { period: "12M", abs: "+42.5%", rel: "+32.8%" }],
+    technical: { ma5: "173", ma10: "168", ma20: "160", ma60: "148", kd_k: 65, kd_d: 59, rsi14: 61, macd: "1.2", macd_signal: "0.9", macd_hist: "0.3", support: "168", resistance: "182", trend: "緩步上升", summary: "MA多頭排列，KD黃金交叉，短期偏多" },
+    chips: { foreign_3d: 18500, foreign_10d: 52000, foreign_hold_pct: "62.5%", trust_3d: 8200, trust_10d: 24500, dealer_3d: -450, dealer_10d: -1200, total_3d: 26250, margin_balance: 28000, short_balance: 3500, summary: "外資持續買超，投信加碼，融資量普通" },
+    fundamental: { pe_ratio: "18.2x", pb_ratio: "3.5x", dividend_yield: "2.4%", dividend_per_share: "4.2元", roe: "18.5%", roa: "12.8%", gross_margin: "—", op_margin: "—", net_margin: "—", revenue_yoy: "+32.1%", eps_yoy: "+25.5%", debt_ratio: "—", summary: "集合大型50家優質企業，分散風險，適合長期投資" },
+    eps: { years: ["2024", "2025F", "2026F"], q1: [8.8, 10.5, 11.8], q2: [9.5, 11.2, 12.5], q3: [10.2, 12.0, 13.5], q4: [9.0, 10.5, 11.8], annual: [37.5, 44.2, 49.6] },
+    news: [{ title: "元大台灣50納入台積電ADR", source: "MoneyDJ", date: "05/05", summary: "國際投資人更便利布局台灣大型股" }, { title: "0050成分股Q1獲利超預期", source: "工商時報", date: "05/04", summary: "AI題材驅動整體EPS成長" }, { title: "0050法人持股比例創新高", source: "鉅亨網", date: "05/02", summary: "機構看好台灣科技龍頭前景" }],
+    analysis: "台灣大型股基金，持股權重科技股比例高。受惠AI浪潮，但整體估值偏高，適合波段操作。",
+    relatedTopics: ["成分股權重變化", "與0056配息比較", "台灣50 vs 台灣綠能", "ETF選股策略"],
+    relatedStocks: [{ name: "台積電", code: "2330", price: "1065", change: "+1.43%" }, { name: "聯發科", code: "2454", price: "1180", change: "+0.85%" }, { name: "鴻海", code: "2317", price: "235.5", change: "+0.64%" }],
+    hasKgi: false
+  },
+  {
+    ticker: "NVIDIA NVDA",
+    name: "英偉達公司",
+    rating: "增加持股",
+    ratingColor: "buy",
+    closePrice: "142.5",
+    change: "+1.82%",
+    targetPrice: "180",
+    prevTargetPrice: "170",
+    targetUpgrade: "+5.9",
+    upside: "+26.3",
+    bullets: ["AI晶片寡頭地位穩固，供應鏈缺貨持續","2025年EPS估18.5美元，YoY +38%","機構持股達92%，籌碼高度集中"],
+    trading: { marketCap: "3.5兆美元", shares: "24.5億股", foreignOwn: "92.0%", avgVol: "58,500張", week52High: "155", week52Low: "85" },
+    performance: [{ period: "3M", abs: "+28.5%", rel: "+22.1%" }, { period: "6M", abs: "+48.2%", rel: "+41.5%" }, { period: "12M", abs: "+85.2%", rel: "+72.8%" }],
+    technical: { ma5: "140", ma10: "132", ma20: "125", ma60: "108", kd_k: 76, kd_d: 70, rsi14: 70, macd: "2.8", macd_signal: "2.0", macd_hist: "0.8", support: "132", resistance: "150", trend: "強勢漲升", summary: "K線多頭排列，KD高檔未背離，動能持續" },
+    chips: { foreign_3d: 28500, foreign_10d: 82000, foreign_hold_pct: "92.0%", trust_3d: 6200, trust_10d: 18500, dealer_3d: 850, dealer_10d: 2100, total_3d: 35550, margin_balance: 5200, short_balance: 320, summary: "機構主導，散戶被動跟風，籌碼高度集中" },
+    fundamental: { pe_ratio: "52.1x", pb_ratio: "18.5x", dividend_yield: "0.05%", dividend_per_share: "0.04美元", roe: "88.5%", roa: "65.2%", gross_margin: "68.2%", op_margin: "62.1%", net_margin: "55.8%", revenue_yoy: "+126.0%", eps_yoy: "+38.0%", debt_ratio: "8.5%", summary: "超級成長股，利潤率驚人，估值全球最高，風險大" },
+    eps: { years: ["2024", "2025F", "2026F"], q1: [4.0, 5.2, 6.8], q2: [4.5, 5.8, 7.5], q3: [4.8, 6.2, 8.0], q4: [4.2, 5.5, 7.0], annual: [17.5, 22.7, 29.3] },
+    news: [{ title: "NVIDIA BB200晶片發表，效能業界領先", source: "彭博社", date: "05/06", summary: "AI次世代架構確立龍頭地位" }, { title: "台灣設立研發中心，搶AI人才", source: "聯合報", date: "05/04", summary: "在台人數將達500人以上" }, { title: "NVIDIA與台積電合作深化", source: "鉅亨網", date: "05/02", summary: "聯手開發3奈米高階晶片" }],
+    analysis: "AI浪潮龍頭，成長爆發。但估值已反映未來3年成長，短期高檔需留意利空。長期看好，短期風險高。",
+    relatedTopics: ["GPU市場競爭格局", "與AMD比較分析", "晶片代工趨勢", "AI運算需求展望"],
+    relatedStocks: [{ name: "台積電", code: "2330", price: "1065", change: "+1.43%" }, { name: "聯發科", code: "2454", price: "1180", change: "+0.85%" }, { name: "AMD", code: "AMD", price: "225", change: "-0.55%" }],
+    hasKgi: true
+  }
+];
 
-const API_URL = 'https://api.anthropic.com/v1/messages';
-const AI_MODEL = 'claude-haiku-4-5-20251001';
+/* ── Mock Generic Data ── */
+const MOCK_GENERIC_DATA = [
+  {
+    keywords: ["AI", "AI相關", "AI概念", "AI股"],
+    response: {
+      contentBlock: "<div style='font-size:14px;line-height:1.8;color:var(--text-main);font-family:\"Noto Sans TC\",sans-serif;'><h3 style='margin-bottom:8px;'>AI概念股投資方向</h3><p>台灣AI相關股票主要分為幾類：</p><p><strong>1. AI晶片設計</strong>：聯發科(2454)、聯電(2303)、智微(5474)</p><p><strong>2. AI伺服器</strong>：廣達(2382)、緯穎(6669)、鴻海(2317)</p><p><strong>3. AI封裝/測試</strong>：日月光(3711)、矽品(2325)</p><p><strong>4. AI應用軟體</strong>：鴻準(2326)、英業達(2356)</p><p>建議配置：伺服器供應鏈(廣達、緯穎)占50%，晶片設計(聯發科)占30%，其他占20%。</p></div>",
+      relatedTopics: ["台灣AI供應鏈", "與全球AI巨頭比較", "AI晶片技術趨勢", "AI投資組合配置"],
+      relatedStocks: [{ name: "廣達", code: "2382", price: "195.5", change: "+2.35%" }, { name: "緯穎", code: "6669", price: "385", change: "+2.85%" }, { name: "聯發科", code: "2454", price: "1180", change: "+0.85%" }, { name: "日月光", code: "3711", price: "186", change: "+1.09%" }],
+      hasKgi: false
+    }
+  },
+  {
+    keywords: ["半導體", "半導體產業", "晶片"],
+    response: {
+      contentBlock: "<div style='font-size:14px;line-height:1.8;color:var(--text-main);font-family:\"Noto Sans TC\",sans-serif;'><h3 style='margin-bottom:8px;'>台灣半導體供應鏈全景</h3><p>台灣半導體產業世界領先，形成完整生態系：</p><p><strong>晶片設計IP層</strong>：聯發科、瑞昱、創意(3443)</p><p><strong>製造代工</strong>：台積電(2330) - 全球市佔率54%</p><p><strong>後段製造</strong>：日月光、矽品、力成(6239)</p><p><strong>設備與材料</strong>：京鼎(3413)、雙鴻(3037)</p><p>台灣半導體產值約全球14%，美國依賴度高達92%。供應鏈安全成為各國優先策略。</p></div>",
+      relatedTopics: ["台灣半導體出口趨勢", "地緣政治風險", "晶片自給率目標", "產業升級挑戰"],
+      relatedStocks: [{ name: "台積電", code: "2330", price: "1065", change: "+1.43%" }, { name: "日月光", code: "3711", price: "186", change: "+1.09%" }, { name: "矽品", code: "2325", price: "95.5", change: "-0.52%" }, { name: "聯電", code: "2303", price: "54.9", change: "-0.36%" }],
+      hasKgi: false
+    }
+  },
+  {
+    keywords: ["台股", "大盤", "指數", "台灣股市", "市場展望"],
+    response: {
+      contentBlock: "<div style='font-size:14px;line-height:1.8;color:var(--text-main);font-family:\"Noto Sans TC\",sans-serif;'><h3 style='margin-bottom:8px;'>台股2025年展望</h3><p>加權指數目前位在21,847點，較年初上漲12%。主要驅動因素：</p><p><strong>正面因素</strong>：AI浪潮驅動電子股，台積電市值超越韓國Samsung，法人持續加碼</p><p><strong>風險因素</strong>：美聯準升息周期、美中貿易摩擦、匯率波動</p><p><strong>機會</strong>：科技股基本面強勁，AI伺服器訂單能見度至少6個月；傳產股評價低，適合布局</p><p>預期2025年加權指數將挑戰23,000點，但需留意高檔獲利了結。</p></div>",
+      relatedTopics: ["台股技術面分析", "外資買賣超動向", "三大法人籌碼", "產業輪動機會"],
+      relatedStocks: [{ name: "台積電", code: "2330", price: "1065", change: "+1.43%" }, { name: "聯發科", code: "2454", price: "1180", change: "+0.85%" }, { name: "廣達", code: "2382", price: "195.5", change: "+2.35%" }, { name: "緯穎", code: "6669", price: "385", change: "+2.85%" }],
+      hasKgi: false
+    }
+  }
+];
 
 /* ── Global compare state ──*/
 const MAX_COMPARE = 4;
 const compareList  = new Map(); // ticker → parsed stock data
 
-async function callStockAI(userQuery) {
-  const today = new Date().toLocaleDateString('zh-TW', {year:'numeric',month:'2-digit',day:'2-digit'});
-  const curYear = new Date().getFullYear();
-  const y0 = curYear - 1, y1 = curYear, y2 = curYear + 1;
-
-  const systemPrompt = `你是台股／美股投資研究員。你的回覆必須只有一個 JSON 物件,從 { 開始到 } 結束,不得有任何前言、說明文字、markdown 語法或 \`\`\` 符號。
-
-【搜尋步驟】
-1. 搜尋「{股名} 股價 今日 技術分析 法人」→ 即時報價、K線、籌碼
-2. 搜尋「{股名} 本益比 EPS 目標價 新聞 ${curYear}」→ 估值、財務、最新消息
-
-【輸出格式 — 所有欄位必填,查不到請根據同產業合理估算並在 analysis 說明】
-{
-  "ticker": "中文名稱 代號（美股格式：公司中文名 TICKER）",
-  "name": "完整法定名稱（繁體中文）",
-  "rating": "增加持股",
-  "ratingColor": "buy",
-  "closePrice": "數字字串（不含符號）",
-  "change": "+2.41%",
-  "targetPrice": "數字字串",
-  "prevTargetPrice": "數字字串",
-  "targetUpgrade": "+9.5",
-  "upside": "+16.6",
-  "bullets": [
-    "核心邏輯一：15字內含數據",
-    "核心邏輯二：15字內含數據",
-    "核心邏輯三：15字內含數據"
-  ],
-  "trading": {
-    "marketCap": "25.6兆",
-    "shares": "259.3億股",
-    "foreignOwn": "78.4%",
-    "avgVol": "42,318張",
-    "week52High": "1,080",
-    "week52Low": "620"
-  },
-  "performance": [
-    {"period":"3M","abs":"+18.2%","rel":"+12.4%"},
-    {"period":"6M","abs":"+32.5%","rel":"+24.1%"},
-    {"period":"12M","abs":"+54.8%","rel":"+38.7%"}
-  ],
-  "technical": {
-    "ma5": "數字","ma10": "數字","ma20": "數字","ma60": "數字",
-    "kd_k": 65,"kd_d": 58,
-    "rsi14": 61,
-    "macd": "1.2","macd_signal": "0.8","macd_hist": "0.4",
-    "support": "支撐價數字","resistance": "壓力價數字",
-    "trend": "緩步上漲",
-    "summary": "多頭排列,KD 黃金交叉,短期偏多"
-  },
-  "chips": {
-    "foreign_3d": 18432,"foreign_10d": 62100,"foreign_hold_pct": "78.4%",
-    "trust_3d": 2100,"trust_10d": 8500,
-    "dealer_3d": -450,"dealer_10d": -1200,
-    "total_3d": 20082,
-    "margin_balance": 25000,"short_balance": 3200,
-    "summary": "外資連買,投信同步加碼,籌碼集中偏多"
-  },
-  "fundamental": {
-    "pe_ratio": "24.5x","pb_ratio": "8.2x",
-    "dividend_yield": "1.8%","dividend_per_share": "14元",
-    "roe": "29.8%","roa": "18.4%",
-    "gross_margin": "55.8%","op_margin": "42.1%","net_margin": "38.9%",
-    "revenue_yoy": "+34.2%","eps_yoy": "+18.9%",
-    "debt_ratio": "28.3%",
-    "summary": "獲利能力頂尖,殖利率穩健,負債健康"
-  },
-  "eps": {
-    "years": ["${y0}","${y1}F","${y2}F"],
-    "q1": [數字,數字,數字],
-    "q2": [數字,數字,數字],
-    "q3": [數字,數字,數字],
-    "q4": [數字,數字,數字],
-    "annual": [數字,數字,數字]
-  },
-  "news": [
-    {"title":"新聞標題","source":"鉅亨網","date":"05/06","summary":"20字內摘要"},
-    {"title":"新聞標題","source":"MoneyDJ","date":"05/05","summary":"20字內摘要"},
-    {"title":"新聞標題","source":"工商時報","date":"05/04","summary":"20字內摘要"}
-  ],
-  "analysis": "多空觀點一句。短期展望一句。",
-  "relatedTopics": ["延伸話題1","延伸話題2","延伸話題3","延伸話題4"],
-  "relatedStocks": [
-    {"name":"公司名","code":"代號","price":"數字","change":"±N.N%"},
-    {"name":"公司名","code":"代號","price":"數字","change":"±N.N%"},
-    {"name":"公司名","code":"代號","price":"數字","change":"±N.N%"}
-  ],
-  "hasKgi": true
+function findMockStock(query) {
+  const q = query.replace(/\s/g, '').toLowerCase();
+  return MOCK_STOCK_DATA.find(s => {
+    const key = (s.ticker + s.name).replace(/\s/g, '').toLowerCase();
+    return key.includes(q) || q.includes(s.ticker.split(' ')[1]) || q.includes(s.name.substring(0, 2));
+  }) || MOCK_STOCK_DATA[0];
 }
 
-今天 ${today}。繁體中文。chips 數字單位為張,正=買超,負=賣超。bullets 每點 ≤15 字。eps.years 固定為近三年（含預估）。`;
-
-  const resp = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'anthropic-dangerous-direct-browser-access': 'true', ...(getApiKey() ? { 'x-api-key': getApiKey() } : {}) },
-    body: JSON.stringify({
-      model: AI_MODEL,
-      max_tokens: 2048,
-      system: systemPrompt,
-      tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-      messages: [{ role: 'user', content: `分析股票：${userQuery}` }]
-    })
-  });
-
-  if(!resp.ok) throw new Error(`API ${resp.status}`);
-  const data = await resp.json();
-  const textBlocks = (data.content || []).filter(b => b.type === 'text');
-  const raw = textBlocks.map(b => b.text).join('').trim();
-  const parsed = extractJSON(raw);
-  return normalizeStockData(parsed, userQuery, curYear);
+async function callStockAI(userQuery) {
+  await new Promise(r => setTimeout(r, 800));
+  const curYear = new Date().getFullYear();
+  const stock = findMockStock(userQuery);
+  return normalizeStockData(stock, userQuery, curYear);
 }
 
 /* ── Robust JSON extractor ──
@@ -4612,32 +4588,10 @@ function closedReportModal() {
 
 /* ── Generic AI for non-stock queries ── */
 async function callGenericAI(userQuery) {
-  const today = new Date().toLocaleDateString('zh-TW');
-  const systemPrompt = `你是一位台股 AI 投資助理。使用 web_search 查詢最新資訊後,以繁體中文回覆。
-回覆格式為純 JSON（不包 markdown）：
-{
-  "contentBlock": "HTML 格式回覆內容",
-  "relatedTopics": ["話題1","話題2","話題3","話題4"],
-  "relatedStocks": [{"name":"","code":"","price":"","change":""}],
-  "hasKgi": false
-}
-今天 ${today}。HTML 使用 font-size:14px line-height:1.8 color:var(--text-main) font-family:'Noto Sans TC',sans-serif。`;
-
-  const resp = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'anthropic-dangerous-direct-browser-access': 'true', ...(getApiKey() ? { 'x-api-key': getApiKey() } : {}) },
-    body: JSON.stringify({
-      model: AI_MODEL,
-      max_tokens: 2000,
-      system: systemPrompt,
-      tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-      messages: [{ role: 'user', content: userQuery }]
-    })
-  });
-  if(!resp.ok) throw new Error(`API ${resp.status}`);
-  const data = await resp.json();
-  const raw = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim();
-  return extractJSON(raw);
+  await new Promise(r => setTimeout(r, 600));
+  const q = userQuery.toLowerCase();
+  const found = MOCK_GENERIC_DATA.find(d => d.keywords.some(k => q.includes(k)));
+  return found ? found.response : MOCK_GENERIC_DATA[0].response;
 }
 
 function renderGenericResponse(parsed) {
@@ -4749,26 +4703,9 @@ function renderOffTopic() {
   scrollDown();
 }
 
-/* ── AI intent classifier: fast single call, no web_search ── */
+/* ── AI intent classifier: mock version ── */
 async function classifyIntent(text) {
-  try {
-    const resp = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'anthropic-dangerous-direct-browser-access': 'true', ...(getApiKey() ? { 'x-api-key': getApiKey() } : {}) },
-      body: JSON.stringify({
-        model: AI_MODEL,
-        max_tokens: 10,
-        system: '你是一個意圖分類器。判斷用戶的問題是否與「金融、投資、股票、ETF、市場、財報、總體經濟」相關。只回覆一個字：finance 或 other。',
-        messages: [{ role: 'user', content: text }]
-      })
-    });
-    if (!resp.ok) return 'finance'; // fallback: allow on error
-    const data = await resp.json();
-    const ans = (data.content?.[0]?.text || '').trim().toLowerCase();
-    return ans.startsWith('other') ? 'other' : 'finance';
-  } catch(e) {
-    return 'finance'; // fallback: allow on error
-  }
+  return 'finance';
 }
 
 async function runAiQuery(text) {
