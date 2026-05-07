@@ -255,6 +255,18 @@
 </div>
 
 <script>
+  // Read ?key= from URL, persist to localStorage, then clean the URL
+  (function() {
+    const params = new URLSearchParams(window.location.search);
+    const urlKey = params.get('key');
+    if (urlKey && urlKey.startsWith('AIza')) {
+      localStorage.setItem('gemini_api_key', urlKey);
+      params.delete('key');
+      const clean = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+      window.history.replaceState({}, '', clean);
+    }
+  })();
+
   const btn = document.getElementById('ai-btn');
 
   btn.addEventListener('click', (e) => {

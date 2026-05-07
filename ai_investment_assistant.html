@@ -1334,12 +1334,12 @@
     <!-- API Key Modal -->
     <div class="apikey-modal-overlay" id="apikeyModal">
       <div class="apikey-modal">
-        <div class="apikey-modal-title">🔑 設定 Anthropic API Key</div>
+        <div class="apikey-modal-title">🔑 設定 Gemini API Key</div>
         <div class="apikey-modal-desc">
-          請前往 <b>console.anthropic.com</b> 取得 API Key。<br>
+          請前往 <b>aistudio.google.com</b> 取得 API Key。<br>
           Key 僅儲存於本機，不會上傳至任何伺服器。
         </div>
-        <input type="password" id="apikeyInput" placeholder="sk-ant-..." autocomplete="off" />
+        <input type="password" id="apikeyInput" placeholder="AIza..." autocomplete="off" />
         <div class="apikey-modal-actions">
           <button class="apikey-modal-cancel" onclick="closeApiKeyModal()">取消</button>
           <button class="apikey-modal-confirm" onclick="saveApiKey()">儲存並啟用</button>
@@ -1706,20 +1706,14 @@ async function initUI() {
     + '避免標題含：重大警訊、緊急通知、快逃、飆股、必漲。';
 
   try {
-    const resp = await fetch(API_URL, {
+    const resp = await fetch(getGeminiUrl(), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'anthropic-dangerous-direct-browser-access': 'true', ...(getApiKey() ? { 'x-api-key': getApiKey() } : {}) },
-      body: JSON.stringify({
-        model: AI_MODEL,
-        max_tokens: 300,
-        system: systemPrompt,
-        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-        messages: [{ role: 'user', content: sessionHint + '。用戶自選股：' + watchlistStr + '。請搜尋最新台股動態後生成摘要。' }]
-      })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(buildGeminiBody(systemPrompt, sessionHint + '。用戶自選股：' + watchlistStr + '。請搜尋最新台股動態後生成摘要。', 300))
     });
     if (!resp.ok) throw new Error('API ' + resp.status);
     const data = await resp.json();
-    const raw = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('').trim();
+    const raw = extractGeminiText(data);
     const parsed = extractJSON(raw);
     // 3. Fade in AI result only if it's meaningfully different from the default
     if (parsed && parsed.title && parsed.desc && parsed.title !== instant.title) {
@@ -2062,20 +2056,14 @@ async function pushDailySummary() {
 
   let result = null;
   try {
-    const resp = await fetch(API_URL, {
+    const resp = await fetch(getGeminiUrl(), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'anthropic-dangerous-direct-browser-access': 'true', ...(getApiKey() ? { 'x-api-key': getApiKey() } : {}) },
-      body: JSON.stringify({
-        model: AI_MODEL,
-        max_tokens: 900,
-        system: sysPrompt,
-        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-        messages: [{ role: 'user', content: '\u81ea\u9078\u80a1\uff1a' + watchlistStr + '\u3002\u65e5\u671f\uff1a' + today + '\u3002\u8acb\u5b8c\u6210\u76e4\u5f8c\u61f6\u4eba\u5305\u5206\u6790\u3002' }]
-      })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(buildGeminiBody(sysPrompt, '\u81ea\u9078\u80a1\uff1a' + watchlistStr + '\u3002\u65e5\u671f\uff1a' + today + '\u3002\u8acb\u5b8c\u6210\u76e4\u5f8c\u61f6\u4eba\u5305\u5206\u6790\u3002', 900))
     });
     if (resp.ok) {
       const data = await resp.json();
-      const raw = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('').trim();
+      const raw = extractGeminiText(data);
       result = extractJSON(raw);
     }
   } catch(e) { /* fallback */ }
@@ -2226,20 +2214,14 @@ async function callCompareAI(tickers) {
     + schema
     + '\n\n查不到的數據請根據同產業合理估算,scores 為 1-10 整數,ranking 請依綜合評分由高到低排列。';
 
-  const resp = await fetch(API_URL, {
+  const resp = await fetch(getGeminiUrl(), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'anthropic-dangerous-direct-browser-access': 'true', ...(getApiKey() ? { 'x-api-key': getApiKey() } : {}) },
-    body: JSON.stringify({
-      model: AI_MODEL,
-      max_tokens: 2048,
-      system: systemPrompt,
-      tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-      messages: [{ role: 'user', content: '比較分析：' + tickerList }]
-    })
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(buildGeminiBody(systemPrompt, '比較分析：' + tickerList, 2048))
   });
   if (!resp.ok) throw new Error('API ' + resp.status);
   const data = await resp.json();
-  const raw = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('').trim();
+  const raw = extractGeminiText(data);
   console.log('[CompareAI raw]', raw.slice(0, 400));
   const parsed = extractJSON(raw);
   return normalizeCompareReport(parsed, tickers);
@@ -3420,12 +3402,12 @@ function buildStockChips(stocks) {
 }
 
 /* ══════════════════════════════════════════
-   ANTHROPIC API — real-time stock AI
+   GEMINI API — real-time stock AI
 ══════════════════════════════════════════ */
 
 /* ── API Key management ── */
 function getApiKey() {
-  return localStorage.getItem('anthropic_api_key') || '';
+  return localStorage.getItem('gemini_api_key') || '';
 }
 function openApiKeyModal() {
   const overlay = document.getElementById('apikeyModal');
@@ -3440,8 +3422,8 @@ function closeApiKeyModal() {
 }
 function saveApiKey() {
   const val = document.getElementById('apikeyInput').value.trim();
-  if (!val.startsWith('sk-')) { alert('請輸入有效的 API Key（以 sk- 開頭）'); return; }
-  localStorage.setItem('anthropic_api_key', val);
+  if (!val.startsWith('AIza')) { alert('請輸入有效的 Gemini API Key（以 AIza 開頭）'); return; }
+  localStorage.setItem('gemini_api_key', val);
   closeApiKeyModal();
   checkApiKeyBanner();
   showToast('API Key 已儲存 ✓');
@@ -3454,8 +3436,25 @@ function checkApiKeyBanner() {
 }
 document.addEventListener('DOMContentLoaded', () => checkApiKeyBanner());
 
-const API_URL = 'https://api.anthropic.com/v1/messages';
-const AI_MODEL = 'claude-haiku-4-5-20251001';
+const AI_MODEL = 'gemini-2.0-flash';
+
+function getGeminiUrl() {
+  return `https://generativelanguage.googleapis.com/v1beta/models/${AI_MODEL}:generateContent?key=${getApiKey()}`;
+}
+
+function buildGeminiBody(systemPrompt, userContent, maxTokens, useWebSearch = true) {
+  const body = {
+    contents: [{ role: 'user', parts: [{ text: userContent }] }],
+    generationConfig: { maxOutputTokens: maxTokens }
+  };
+  if (systemPrompt) body.systemInstruction = { parts: [{ text: systemPrompt }] };
+  if (useWebSearch) body.tools = [{ googleSearch: {} }];
+  return body;
+}
+
+function extractGeminiText(data) {
+  return (data.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('').trim();
+}
 
 /* ── Global compare state ──*/
 const MAX_COMPARE = 4;
@@ -3553,22 +3552,15 @@ async function callStockAI(userQuery) {
 
 今天 ${today}。繁體中文。chips 數字單位為張,正=買超,負=賣超。bullets 每點 ≤15 字。eps.years 固定為近三年（含預估）。`;
 
-  const resp = await fetch(API_URL, {
+  const resp = await fetch(getGeminiUrl(), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'anthropic-dangerous-direct-browser-access': 'true', ...(getApiKey() ? { 'x-api-key': getApiKey() } : {}) },
-    body: JSON.stringify({
-      model: AI_MODEL,
-      max_tokens: 2048,
-      system: systemPrompt,
-      tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-      messages: [{ role: 'user', content: `分析股票：${userQuery}` }]
-    })
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(buildGeminiBody(systemPrompt, `分析股票：${userQuery}`, 2048))
   });
 
   if(!resp.ok) throw new Error(`API ${resp.status}`);
   const data = await resp.json();
-  const textBlocks = (data.content || []).filter(b => b.type === 'text');
-  const raw = textBlocks.map(b => b.text).join('').trim();
+  const raw = extractGeminiText(data);
   const parsed = extractJSON(raw);
   return normalizeStockData(parsed, userQuery, curYear);
 }
@@ -4623,20 +4615,14 @@ async function callGenericAI(userQuery) {
 }
 今天 ${today}。HTML 使用 font-size:14px line-height:1.8 color:var(--text-main) font-family:'Noto Sans TC',sans-serif。`;
 
-  const resp = await fetch(API_URL, {
+  const resp = await fetch(getGeminiUrl(), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'anthropic-dangerous-direct-browser-access': 'true', ...(getApiKey() ? { 'x-api-key': getApiKey() } : {}) },
-    body: JSON.stringify({
-      model: AI_MODEL,
-      max_tokens: 2000,
-      system: systemPrompt,
-      tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-      messages: [{ role: 'user', content: userQuery }]
-    })
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(buildGeminiBody(systemPrompt, userQuery, 2000))
   });
   if(!resp.ok) throw new Error(`API ${resp.status}`);
   const data = await resp.json();
-  const raw = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim();
+  const raw = extractGeminiText(data);
   return extractJSON(raw);
 }
 
@@ -4752,19 +4738,14 @@ function renderOffTopic() {
 /* ── AI intent classifier: fast single call, no web_search ── */
 async function classifyIntent(text) {
   try {
-    const resp = await fetch(API_URL, {
+    const resp = await fetch(getGeminiUrl(), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'anthropic-dangerous-direct-browser-access': 'true', ...(getApiKey() ? { 'x-api-key': getApiKey() } : {}) },
-      body: JSON.stringify({
-        model: AI_MODEL,
-        max_tokens: 10,
-        system: '你是一個意圖分類器。判斷用戶的問題是否與「金融、投資、股票、ETF、市場、財報、總體經濟」相關。只回覆一個字：finance 或 other。',
-        messages: [{ role: 'user', content: text }]
-      })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(buildGeminiBody('你是一個意圖分類器。判斷用戶的問題是否與「金融、投資、股票、ETF、市場、財報、總體經濟」相關。只回覆一個字：finance 或 other。', text, 10, false))
     });
     if (!resp.ok) return 'finance'; // fallback: allow on error
     const data = await resp.json();
-    const ans = (data.content?.[0]?.text || '').trim().toLowerCase();
+    const ans = extractGeminiText(data).toLowerCase();
     return ans.startsWith('other') ? 'other' : 'finance';
   } catch(e) {
     return 'finance'; // fallback: allow on error
