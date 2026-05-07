@@ -3407,7 +3407,7 @@ async function fetchGemini(body) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
-    if (resp.status === 429 && attempt < DELAYS.length) {
+    if ((resp.status === 429 || resp.status === 503) && attempt < DELAYS.length) {
       await new Promise(r => setTimeout(r, DELAYS[attempt]));
       continue;
     }
