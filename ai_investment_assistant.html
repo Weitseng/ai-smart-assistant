@@ -3374,7 +3374,7 @@ function checkApiKeyBanner() {
 }
 document.addEventListener('DOMContentLoaded', () => checkApiKeyBanner());
 
-const AI_MODEL = 'gemini-1.5-flash';
+const AI_MODEL = 'gemini-2.5-flash-lite';
 
 function getGeminiUrl() {
   return `https://generativelanguage.googleapis.com/v1beta/models/${AI_MODEL}:generateContent?key=${getApiKey()}`;
