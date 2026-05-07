@@ -1706,14 +1706,7 @@ async function initUI() {
     + '避免標題含：重大警訊、緊急通知、快逃、飆股、必漲。';
 
   try {
-    const resp = await fetch(getGeminiUrl(), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(buildGeminiBody(systemPrompt, sessionHint + '。用戶自選股：' + watchlistStr + '。請搜尋最新台股動態後生成摘要。', 300))
-    });
-    if (!resp.ok) throw new Error('API ' + resp.status);
-    const data = await resp.json();
-    const raw = extractGeminiText(data);
+    const raw = await fetchGemini(buildGeminiBody(systemPrompt, sessionHint + '。用戶自選股：' + watchlistStr + '。請搜尋最新台股動態後生成摘要。', 300));
     const parsed = extractJSON(raw);
     // 3. Fade in AI result only if it's meaningfully different from the default
     if (parsed && parsed.title && parsed.desc && parsed.title !== instant.title) {
@@ -2056,16 +2049,8 @@ async function pushDailySummary() {
 
   let result = null;
   try {
-    const resp = await fetch(getGeminiUrl(), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(buildGeminiBody(sysPrompt, '\u81ea\u9078\u80a1\uff1a' + watchlistStr + '\u3002\u65e5\u671f\uff1a' + today + '\u3002\u8acb\u5b8c\u6210\u76e4\u5f8c\u61f6\u4eba\u5305\u5206\u6790\u3002', 900))
-    });
-    if (resp.ok) {
-      const data = await resp.json();
-      const raw = extractGeminiText(data);
-      result = extractJSON(raw);
-    }
+    const raw = await fetchGemini(buildGeminiBody(sysPrompt, '\u81ea\u9078\u80a1\uff1a' + watchlistStr + '\u3002\u65e5\u671f\uff1a' + today + '\u3002\u8acb\u5b8c\u6210\u76e4\u5f8c\u61f6\u4eba\u5305\u5206\u6790\u3002', 900));
+    result = extractJSON(raw);
   } catch(e) { /* fallback */ }
 
   /* ── 組裝最終 HTML ── */
@@ -2214,14 +2199,7 @@ async function callCompareAI(tickers) {
     + schema
     + '\n\n查不到的數據請根據同產業合理估算,scores 為 1-10 整數,ranking 請依綜合評分由高到低排列。';
 
-  const resp = await fetch(getGeminiUrl(), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(buildGeminiBody(systemPrompt, '比較分析：' + tickerList, 2048))
-  });
-  if (!resp.ok) throw new Error('API ' + resp.status);
-  const data = await resp.json();
-  const raw = extractGeminiText(data);
+  const raw = await fetchGemini(buildGeminiBody(systemPrompt, '比較分析：' + tickerList, 2048));
   console.log('[CompareAI raw]', raw.slice(0, 400));
   const parsed = extractJSON(raw);
   return normalizeCompareReport(parsed, tickers);
@@ -3456,6 +3434,25 @@ function extractGeminiText(data) {
   return (data.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('').trim();
 }
 
+async function fetchGemini(body) {
+  const DELAYS = [2000, 5000]; // retry after 2 s, then 5 s
+  for (let attempt = 0; attempt <= DELAYS.length; attempt++) {
+    const resp = await fetch(getGeminiUrl(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (resp.status === 429 && attempt < DELAYS.length) {
+      await new Promise(r => setTimeout(r, DELAYS[attempt]));
+      continue;
+    }
+    if (!resp.ok) throw new Error(`API ${resp.status}`);
+    const data = await resp.json();
+    return extractGeminiText(data);
+  }
+  throw new Error('API 429');
+}
+
 /* ── Global compare state ──*/
 const MAX_COMPARE = 4;
 const compareList  = new Map(); // ticker → parsed stock data
@@ -3552,15 +3549,7 @@ async function callStockAI(userQuery) {
 
 今天 ${today}。繁體中文。chips 數字單位為張,正=買超,負=賣超。bullets 每點 ≤15 字。eps.years 固定為近三年（含預估）。`;
 
-  const resp = await fetch(getGeminiUrl(), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(buildGeminiBody(systemPrompt, `分析股票：${userQuery}`, 2048))
-  });
-
-  if(!resp.ok) throw new Error(`API ${resp.status}`);
-  const data = await resp.json();
-  const raw = extractGeminiText(data);
+  const raw = await fetchGemini(buildGeminiBody(systemPrompt, `分析股票：${userQuery}`, 2048));
   const parsed = extractJSON(raw);
   return normalizeStockData(parsed, userQuery, curYear);
 }
@@ -4615,14 +4604,7 @@ async function callGenericAI(userQuery) {
 }
 今天 ${today}。HTML 使用 font-size:14px line-height:1.8 color:var(--text-main) font-family:'Noto Sans TC',sans-serif。`;
 
-  const resp = await fetch(getGeminiUrl(), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(buildGeminiBody(systemPrompt, userQuery, 2000))
-  });
-  if(!resp.ok) throw new Error(`API ${resp.status}`);
-  const data = await resp.json();
-  const raw = extractGeminiText(data);
+  const raw = await fetchGemini(buildGeminiBody(systemPrompt, userQuery, 2000));
   return extractJSON(raw);
 }
 
@@ -4738,14 +4720,7 @@ function renderOffTopic() {
 /* ── AI intent classifier: fast single call, no web_search ── */
 async function classifyIntent(text) {
   try {
-    const resp = await fetch(getGeminiUrl(), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(buildGeminiBody('你是一個意圖分類器。判斷用戶的問題是否與「金融、投資、股票、ETF、市場、財報、總體經濟」相關。只回覆一個字：finance 或 other。', text, 10, false))
-    });
-    if (!resp.ok) return 'finance'; // fallback: allow on error
-    const data = await resp.json();
-    const ans = extractGeminiText(data).toLowerCase();
+    const ans = (await fetchGemini(buildGeminiBody('你是一個意圖分類器。判斷用戶的問題是否與「金融、投資、股票、ETF、市場、財報、總體經濟」相關。只回覆一個字：finance 或 other。', text, 10, false))).toLowerCase();
     return ans.startsWith('other') ? 'other' : 'finance';
   } catch(e) {
     return 'finance'; // fallback: allow on error
