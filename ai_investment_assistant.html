@@ -4703,16 +4703,6 @@ async function runAiQuery(text) {
     return;
   }
 
-  // ── AI intent check: classify before doing full analysis ──
-  showTyping(false);
-  const intent = await classifyIntent(text);
-  if (intent === 'other') {
-    hideTyping();
-    renderOffTopic();
-    return;
-  }
-  hideTyping();
-
   const stock = isStockQuery(text);
   showTyping(stock);
   try {
