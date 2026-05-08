@@ -1325,27 +1325,6 @@
 
     <!-- ═══ FIXED HEADER ═══ -->
     <div class="fixed-header">
-    <!-- API Key Banner -->
-    <div class="apikey-banner" id="apikeyBanner">
-      <span class="apikey-banner-text">⚠️ 需要設定 API Key 才能使用 AI 功能</span>
-      <button class="apikey-banner-btn" onclick="openApiKeyModal()">設定</button>
-    </div>
-
-    <!-- API Key Modal -->
-    <div class="apikey-modal-overlay" id="apikeyModal">
-      <div class="apikey-modal">
-        <div class="apikey-modal-title">🔑 設定 Gemini API Key</div>
-        <div class="apikey-modal-desc">
-          請前往 <b>aistudio.google.com</b> 取得 API Key。<br>
-          Key 僅儲存於本機，不會上傳至任何伺服器。
-        </div>
-        <input type="password" id="apikeyInput" placeholder="AIza..." autocomplete="off" />
-        <div class="apikey-modal-actions">
-          <button class="apikey-modal-cancel" onclick="closeApiKeyModal()">取消</button>
-          <button class="apikey-modal-confirm" onclick="saveApiKey()">儲存並啟用</button>
-        </div>
-      </div>
-    </div>
 
       <div class="status-bar">
         <span class="status-time" id="clock">9:41</span>
@@ -1691,41 +1670,42 @@ function initUI() {
 ══════════════════════════════════════════ */
 
 /* ── Mock Data — replace with real API payload ── */
+/* ── 市場資料（2026-05-07 收盤）── */
 const MOCK_MARKET_DATA = {
-  fetchedAt: null, // will be set at runtime
+  fetchedAt: '2026-05-07',
   indices: [
-    { name: '加權指數', value: '21,847', change: '+1.23%', dir: 'up' },
-    { name: '櫃買指數', value: '239.8',  change: '+0.87%', dir: 'up' },
-    { name: '美元/台幣', value: '31.25',  change: '-0.08%', dir: 'dn' },
+    { name: '加權指數', value: '41,933', change: '+1.93%', dir: 'up' },
+    { name: '櫃買指數', value: '409.44', change: '-1.67%', dir: 'dn' },
+    { name: '美元/台幣', value: '31.35',  change: '-0.26%', dir: 'dn' },
   ],
   stocks: [
     {
       code: '2330', name: '台積電',
-      price: '1,065', change: '+15', changePct: '+1.43%',
-      dir: 'up', vol: '42,810張',
-      oneLiner: 'CoWoS 擴產題材持續發酵，外資買超'
+      price: '2,310', change: '+60', changePct: '+2.67%',
+      dir: 'up', vol: '41,970張',
+      oneLiner: '股價創歷史新高，與股票代號同數字'
     },
     {
-      code: '2883', name: '凱基金',
-      price: '27.85', change: '+0.25', changePct: '+0.91%',
-      dir: 'up', vol: '8,250張',
-      oneLiner: '金融股輪動，法人持續佈局'
+      code: '2454', name: '聯發科',
+      price: '3,420', change: '+210', changePct: '+6.54%',
+      dir: 'up', vol: '8,584張',
+      oneLiner: 'AI晶片需求重估，當日漲幅最大權值股'
     },
     {
-      code: '2890', name: '永豐金',
-      price: '22.50', change: '-0.10', changePct: '-0.44%',
-      dir: 'dn', vol: '5,430張',
-      oneLiner: '量能偏低，短線觀望氣氛濃'
+      code: '2317', name: '鴻海',
+      price: '253.50', change: '+9.50', changePct: '+3.89%',
+      dir: 'up', vol: '98,226張',
+      oneLiner: 'AI伺服器訂單強勁，領軍補漲行情'
     },
     {
       code: '0050', name: '元大台灣50',
-      price: '218.50', change: '+2.50', changePct: '+1.16%',
-      dir: 'up', vol: '22,180張',
-      oneLiner: '大盤走強，ETF 被動跟漲'
+      price: '97.70', change: '+1.13', changePct: '+1.17%',
+      dir: 'up', vol: '117,375張',
+      oneLiner: '台股指數創高，ETF同步走強'
     }
   ],
-  summary: '台股今日加權指數突破 21,800 點，半導體領漲，外資買超逾 120 億元，籌碼面偏多。',
-  contextQuestions: null // will be auto-generated if null
+  summary: '台股 2026-05-07 加權指數收 41,933 點，大漲 794 點（+1.93%），突破歷史新高。台積電股價創歷史新高 2,310 元，聯發科大漲逾 6%，成交量達 1.25 兆元。',
+  contextQuestions: null
 };
 
 /* ── Direction helpers ── */
@@ -2007,24 +1987,22 @@ async function pushDailySummary() {
     + '"mktSummary":"\u5927\u76e4\u6574\u9ad4\u4e00\u53e5\u8a71\u6458\u8981\uff0835\u5b57\u5167\uff09",'
     + '"followUps":["\u6700\u71b1\u9580\u6642\u4e8b\u8a71\u98981\uff0815\u5b57\u5167\uff09","\u6700\u71b1\u9580\u6642\u4e8b\u8a71\u98982\uff0815\u5b57\u5169\uff09","\u6700\u71b1\u9580\u6642\u4e8b\u8a71\u98983\uff0815\u5b57\u5167\uff09"] }';
 
-  let result = null;
-  try {
-    const raw = await fetchGemini(buildGeminiBody(sysPrompt, '\u81ea\u9078\u80a1\uff1a' + watchlistStr + '\u3002\u65e5\u671f\uff1a' + today + '\u3002\u8acb\u5b8c\u6210\u76e4\u5f8c\u61f6\u4eba\u5305\u5206\u6790\u3002', 900));
-    result = extractJSON(raw);
-  } catch(e) { /* fallback */ }
-
-  /* ── 組裝最終 HTML ── */
-  const stocks = (result && Array.isArray(result.stocks) && result.stocks.length)
-    ? result.stocks
-    : WATCHLIST.map(s => ({ code:s.code, name:s.name, price:'\u2014', change:'\u2014', dir:'flat', oneLiner:'\u8acb\u9ede\u64ca\u67e5\u770b\u8a73\u7d30\u5206\u6790' }));
-
-  const chipTxt  = (result && result.chip)       || '\u7c4c\u78bc\u8cc7\u6599\u66f4\u65b0\u4e2d\u3002';
-  const volTxt   = (result && result.vol)        || '\u91cf\u80fd\u8cc7\u6599\u66f4\u65b0\u4e2d\u3002';
-  const newsTxt  = (result && result.news)       || '\u6d88\u606f\u6301\u7e8c\u66f4\u65b0\u3002';
-  const mktTxt   = (result && result.mktSummary) || '';
-  const followUps = (result && Array.isArray(result.followUps) && result.followUps.length)
-    ? result.followUps
-    : ['\u53f0\u7a4d\u96fb\u6cd5\u8aaa\u5c55\u671b', 'AI \u534a\u5c0e\u9ad4\u9898\u6750\u5206\u6790', '\u81ea\u9078\u80a1\u6bd4\u8f03'];
+  /* ── 使用靜態資料組裝盤後懶人包 ── */
+  const stocks = WATCHLIST.map(s => {
+    const mock = MOCK_STOCK_DATA.find(m => m.ticker.includes(s.code) || m.name.includes(s.name));
+    return {
+      code: s.code, name: s.name,
+      price: mock ? mock.closePrice : '—',
+      change: mock ? mock.change : '—',
+      dir: mock ? (mock.change.startsWith('+') ? 'up' : mock.change.startsWith('-') ? 'down' : 'flat') : 'flat',
+      oneLiner: mock ? (mock.bullets && mock.bullets[0]) || '點擊查看詳細分析' : '點擊查看詳細分析'
+    };
+  });
+  const chipTxt  = '台股主力外資持續布局AI供應鏈，籌碼面偏多。';
+  const volTxt   = '大盤量能溫和放量，科技股成交比重逾六成。';
+  const newsTxt  = '美中貿易談判出現轉機，科技股普遍受惠；緯穎Q1 EPS 75.95元創歷史新高。';
+  const mktTxt   = '加權指數收41,933點，AI題材強勢，科技股領漲全場。';
+  const followUps = ['台積電2奈米進展', 'AI伺服器供應鏈分析', '自選股比較'];
 
   function dC(d){ return d==='up'?'var(--up)':d==='down'?'var(--dn)':'var(--text-hint)'; }
   function dB(d){ return d==='up'?'#fdf0f0':d==='down'?'#f0faf4':'#f5f5f5'; }
@@ -2159,9 +2137,48 @@ async function callCompareAI(tickers) {
     + schema
     + '\n\n查不到的數據請根據同產業合理估算,scores 為 1-10 整數,ranking 請依綜合評分由高到低排列。';
 
-  const raw = await fetchGemini(buildGeminiBody(systemPrompt, '比較分析：' + tickerList, 2048));
-  console.log('[CompareAI raw]', raw.slice(0, 400));
-  const parsed = extractJSON(raw);
+  /* ── 使用靜態 MOCK_STOCK_DATA 生成比較報告 ── */
+  const mockReports = tickers.map(t => {
+    const m = MOCK_STOCK_DATA.find(s => s.ticker.includes(t) || s.name.includes(t) || t.includes(s.ticker.split(' ')[1])) || MOCK_STOCK_DATA[0];
+    return { ticker: t, mock: m };
+  });
+  const parsed = {
+    tickers: tickers,
+    reportDate: today,
+    growth: {
+      cagr: mockReports.reduce((o,r)=>{ o[r.ticker]=r.mock.fundamental.revenue_yoy||'—'; return o; },{}),
+      revenue: [
+        Object.assign({year:'2024'}, mockReports.reduce((o,r)=>{ o[r.ticker]='見財報'; return o; },{})),
+        Object.assign({year:'2025'}, mockReports.reduce((o,r)=>{ o[r.ticker]='見財報'; return o; },{}))
+      ],
+      cfo_capex: mockReports.reduce((o,r)=>{ o[r.ticker]='持續投入研發與擴產'; return o; },{})
+    },
+    profitability: {
+      rows: [
+        Object.assign({metric:'毛利率'}, {'2025': mockReports.reduce((o,r)=>{ o[r.ticker]=r.mock.fundamental.gross_margin||'—'; return o; },{})}),
+        Object.assign({metric:'營業利益率'}, {'2025': mockReports.reduce((o,r)=>{ o[r.ticker]=r.mock.fundamental.op_margin||'—'; return o; },{})}),
+        Object.assign({metric:'淨利率'}, {'2025': mockReports.reduce((o,r)=>{ o[r.ticker]=r.mock.fundamental.net_margin||'—'; return o; },{})})
+      ],
+      phase: mockReports.reduce((o,r)=>{ o[r.ticker]=r.mock.ratingColor==='buy'?'擴張期':'持平'; return o; },{})
+    },
+    valuation: {
+      pe: mockReports.reduce((o,r)=>{ o[r.ticker]={current:r.mock.fundamental.pe_ratio||'—',median3y:'—'}; return o; },{}),
+      pb: mockReports.reduce((o,r)=>{ o[r.ticker]={current:r.mock.fundamental.pb_ratio||'—',median3y:'—'}; return o; },{}),
+      volatility12m: mockReports.reduce((o,r)=>{ o[r.ticker]=r.mock.performance[2]?r.mock.performance[2].abs:'—'; return o; },{}),
+      valuation_signal: mockReports.reduce((o,r)=>{ o[r.ticker]=r.mock.ratingColor==='buy'?'合理':'偏高'; return o; },{})
+    },
+    risk: {
+      debt_ratio: [Object.assign({year:'2025'}, mockReports.reduce((o,r)=>{ o[r.ticker]=r.mock.fundamental.debt_ratio||'—'; return o; },{}))],
+      interest_coverage: mockReports.reduce((o,r)=>{ o[r.ticker]='—'; return o; },{})
+    },
+    radar: {
+      dimensions: ['成長性','獲利能力','財務安全','估值吸引力','股利收益'],
+      scores: mockReports.reduce((o,r)=>{ const b=r.mock.ratingColor==='buy'; o[r.ticker]=[b?8:6,b?8:6,7,b?7:6,5]; return o; },{})
+    },
+    ranking: mockReports.map((r,i)=>({rank:i+1, ticker:r.ticker, reason:r.mock.analysis?r.mock.analysis.substring(0,30)+'…':'綜合評估'})),
+    highlights: mockReports.reduce((o,r)=>{ o[r.ticker]={best:r.mock.bullets&&r.mock.bullets[0]||'—',concern:r.mock.technical&&r.mock.technical.summary||'—'}; return o; },{}),
+    disclaimer: '本分析資料截至2026-05-07，僅供參考，不構成投資建議。投資人應自行評估風險。'
+  };
   return normalizeCompareReport(parsed, tickers);
 }
 
@@ -3348,64 +3365,30 @@ function buildStockChips(stocks) {
    GEMINI API — real-time stock AI
 ══════════════════════════════════════════ */
 
-/* ── API Key management ── */
-function getApiKey() {
-  // Support URL ?key= injection as fallback
-  const urlKey = new URLSearchParams(location.search).get('key');
-  if (urlKey) { localStorage.setItem('gemini_api_key', urlKey); }
-  return localStorage.getItem('gemini_api_key') || '';
-}
-function openApiKeyModal() {
-  const overlay = document.getElementById('apikeyModal');
-  document.querySelector('.phone').appendChild(overlay);
-  overlay.classList.add('open');
-  const input = document.getElementById('apikeyInput');
-  input.value = getApiKey();
-  setTimeout(() => input.focus(), 80);
-}
-function closeApiKeyModal() {
-  document.getElementById('apikeyModal').classList.remove('open');
-}
-function saveApiKey() {
-  const val = document.getElementById('apikeyInput').value.trim();
-  if (!val.startsWith('AIza')) { alert('請輸入有效的 Gemini API Key（以 AIza 開頭）'); return; }
-  localStorage.setItem('gemini_api_key', val);
-  closeApiKeyModal();
-  checkApiKeyBanner();
-  showToast('API Key 已儲存 ✓');
-}
-function checkApiKeyBanner() {
-  const banner = document.getElementById('apikeyBanner');
-  if (!banner) return;
-  if (getApiKey()) { banner.classList.remove('show'); }
-  else { banner.classList.add('show'); }
-}
-document.addEventListener('DOMContentLoaded', () => checkApiKeyBanner());
-
-/* ── Fallback Mock Stock Data (used when no API key) ── */
+/* ── 靜態股票資料（2026-05-07 收盤）── */
 const MOCK_STOCK_DATA = [
   {
     ticker: "台積電 2330",
     name: "台灣積體電路製造股份有限公司",
     rating: "增加持股",
     ratingColor: "buy",
-    closePrice: "1065",
-    change: "+1.43%",
-    targetPrice: "1250",
-    prevTargetPrice: "1180",
-    targetUpgrade: "+5.9",
-    upside: "+17.4",
-    bullets: ["CoWoS封裝月產能擴至10萬片，供不應求", "2025年EPS估81元，YoY +28%", "外資連買15日，持股比例達78.4%"],
-    trading: { marketCap: "27.6兆", shares: "259.3億股", foreignOwn: "78.4%", avgVol: "42,318張", week52High: "1,080", week52Low: "620" },
-    performance: [{ period: "3M", abs: "+18.2%", rel: "+12.4%" }, { period: "6M", abs: "+32.5%", rel: "+24.1%" }, { period: "12M", abs: "+54.8%", rel: "+38.7%" }],
-    technical: { ma5: "1055", ma10: "1028", ma20: "998", ma60: "920", kd_k: 68, kd_d: 61, rsi14: 63, macd: "1.8", macd_signal: "1.1", macd_hist: "0.7", support: "1020", resistance: "1100", trend: "緩步上漲", summary: "多頭排列，KD黃金交叉，短期偏多" },
-    chips: { foreign_3d: 18432, foreign_10d: 62100, foreign_hold_pct: "78.4%", trust_3d: 2100, trust_10d: 8500, dealer_3d: -450, dealer_10d: -1200, total_3d: 20082, margin_balance: 25000, short_balance: 3200, summary: "外資連買，投信同步加碼，籌碼集中偏多" },
-    fundamental: { pe_ratio: "20.1x", pb_ratio: "7.8x", dividend_yield: "1.8%", dividend_per_share: "14元", roe: "29.8%", roa: "18.4%", gross_margin: "55.8%", op_margin: "42.1%", net_margin: "38.9%", revenue_yoy: "+34.2%", eps_yoy: "+28.0%", debt_ratio: "28.3%", summary: "獲利能力頂尖，殖利率穩健，負債健康" },
-    eps: { years: ["2024", "2025F", "2026F"], q1: [17.2, 21.5, 24.0], q2: [20.1, 23.8, 26.5], q3: [23.0, 26.2, 29.0], q4: [19.8, 22.5, 25.0], annual: [80.1, 94.0, 104.5] },
-    news: [{ title: "台積電3奈米良率突破90%", source: "鉅亨網", date: "05/06", summary: "客戶需求強勁，CoWoS產能持續擴張" }, { title: "外資上調台積電目標價至1250", source: "MoneyDJ", date: "05/05", summary: "摩根士丹利重申增持評等" }, { title: "台積電Q1營收創歷史新高", source: "工商時報", date: "05/04", summary: "AI晶片需求帶動整體業績成長" }],
-    analysis: "AI題材與先進封裝需求雙輪驅動，長線基本面穩健。短期因美元走弱與外資買超，技術面偏多。",
-    relatedTopics: ["CoWoS封裝展望", "AI半導體需求分析", "台積電 vs 三星", "聯電比較分析"],
-    relatedStocks: [{ name: "聯發科", code: "2454", price: "1180", change: "+0.85%" }, { name: "日月光投控", code: "3711", price: "186", change: "+1.09%" }, { name: "聯電", code: "2303", price: "54.9", change: "-0.36%" }],
+    closePrice: "2,310",
+    change: "+2.67%",
+    targetPrice: "2,516",
+    prevTargetPrice: "2,350",
+    targetUpgrade: "+7.1",
+    upside: "+8.9",
+    bullets: ["2奈米量產順利，AI晶片佔營收比重突破50%", "2026Q1 EPS 22.08元，年增28.4%", "外資連買17日，持股比例達75.2%"],
+    trading: { marketCap: "59.9兆", shares: "259.3億股", foreignOwn: "75.2%", avgVol: "38,540張", week52High: "2,375", week52Low: "780" },
+    performance: [{ period: "3M", abs: "+22.1%", rel: "+15.8%" }, { period: "6M", abs: "+48.3%", rel: "+36.7%" }, { period: "12M", abs: "+196.2%", rel: "+180.5%" }],
+    technical: { ma5: "2,280", ma10: "2,210", ma20: "2,095", ma60: "1,840", kd_k: 72, kd_d: 65, rsi14: 67, macd: "42", macd_signal: "28", macd_hist: "14", support: "2,200", resistance: "2,380", trend: "強勢上漲", summary: "MA多頭排列，KD黃金交叉，短線偏多，留意2380阻力" },
+    chips: { foreign_3d: 22580, foreign_10d: 78200, foreign_hold_pct: "75.2%", trust_3d: 3100, trust_10d: 9800, dealer_3d: -620, dealer_10d: -1800, total_3d: 25060, margin_balance: 22000, short_balance: 2800, summary: "外資連買17日累積超70萬張，投信同步加碼，籌碼集中偏多" },
+    fundamental: { pe_ratio: "34.87x", pb_ratio: "10.2x", dividend_yield: "1.2%", dividend_per_share: "18元(估)", roe: "32.5%", roa: "21.6%", gross_margin: "58.8%", op_margin: "46.5%", net_margin: "42.2%", revenue_yoy: "+38.4%", eps_yoy: "+28.4%", debt_ratio: "26.1%", summary: "2奈米量產加速，AI晶片佔比超50%，毛利率創歷史新高，殖利率稍低但成長溢價合理" },
+    eps: { years: ["2025A", "2026Q1A", "2026F"], q1: [17.19, 22.08, null], q2: [19.82, null, null], q3: [22.53, null, null], q4: [20.46, null, null], annual: [80.0, null, 96.5] },
+    news: [{ title: "台積電2奈米良率達85%，提前量產", source: "鉅亨網", date: "05/07", summary: "2奈米製程超前部署，Apple、NVIDIA均已下單，CoWoS月產能突破12萬片" }, { title: "外資上調台積電目標價至2516元", source: "MoneyDJ", date: "05/06", summary: "摩根士丹利重申增持評等，認為AI晶片需求能見度延伸至2027年" }, { title: "台積電2026Q1 EPS 22.08元創新高", source: "工商時報", date: "05/04", summary: "Q1合併營收8,387億元年增38.4%，基本EPS 22.08元年增28.4%，超越分析師預期" }],
+    analysis: "2奈米量產順利與AI晶片需求爆發雙輪驅動，2026Q1業績大幅超預期。外資持續買超17日，籌碼面強勢。P/E 34.87倍已充分反映成長溢價，惟中長線能見度強，維持增加持股。",
+    relatedTopics: ["2奈米製程商業化進度", "CoWoS先進封裝展望", "台積電 vs 三星", "AI晶片供應鏈分析"],
+    relatedStocks: [{ name: "聯發科", code: "2454", price: "3,420", change: "+6.54%" }, { name: "日月光投控", code: "3711", price: "195", change: "+1.56%" }, { name: "聯電", code: "2303", price: "55.8", change: "+1.09%" }],
     hasKgi: true
   },
   {
@@ -3413,23 +3396,23 @@ const MOCK_STOCK_DATA = [
     name: "聯發科技股份有限公司",
     rating: "持有",
     ratingColor: "hold",
-    closePrice: "1180",
-    change: "+0.85%",
-    targetPrice: "1320",
-    prevTargetPrice: "1280",
-    targetUpgrade: "+3.1",
-    upside: "+11.9",
-    bullets: ["旗艦晶片4奈米制程領先，AI手機出貨量持續成長", "2025年EPS估45元，YoY +12%", "法人減持但基本面仍穩健"],
-    trading: { marketCap: "3.8兆", shares: "32.3億股", foreignOwn: "62.1%", avgVol: "28,500張", week52High: "1250", week52Low: "780" },
-    performance: [{ period: "3M", abs: "+12.5%", rel: "+8.9%" }, { period: "6M", abs: "+24.3%", rel: "+18.5%" }, { period: "12M", abs: "+38.2%", rel: "+26.7%" }],
-    technical: { ma5: "1175", ma10: "1152", ma20: "1128", ma60: "1080", kd_k: 62, kd_d: 58, rsi14: 59, macd: "0.9", macd_signal: "0.7", macd_hist: "0.2", support: "1140", resistance: "1220", trend: "震盪整理", summary: "MA多頭排列，但KD鈍化，短期需觀察" },
-    chips: { foreign_3d: 8200, foreign_10d: 22100, foreign_hold_pct: "62.1%", trust_3d: 1850, trust_10d: 5200, dealer_3d: -320, dealer_10d: -850, total_3d: 9730, margin_balance: 12000, short_balance: 1500, summary: "外資靜觀其變，投信持續加碼，籌碼面尚可" },
-    fundamental: { pe_ratio: "26.2x", pb_ratio: "9.1x", dividend_yield: "1.2%", dividend_per_share: "14元", roe: "32.5%", roa: "22.1%", gross_margin: "48.2%", op_margin: "38.5%", net_margin: "35.2%", revenue_yoy: "+28.5%", eps_yoy: "+12.0%", debt_ratio: "15.8%", summary: "獲利能力卓越，ROE領先同業，負債低位" },
-    eps: { years: ["2024", "2025F", "2026F"], q1: [10.2, 11.5, 12.8], q2: [11.5, 12.8, 14.2], q3: [12.0, 13.5, 15.0], q4: [10.8, 11.8, 13.2], annual: [44.5, 49.6, 55.2] },
-    news: [{ title: "聯發科AI手機晶片出貨超預期", source: "工商時報", date: "05/06", summary: "安卓陣營積極採用旗艦AI方案" }, { title: "天風國際上調評等至買進", source: "MoneyDJ", date: "05/04", summary: "目標價上修至1350元" }, { title: "聯發科Q1營收環比增長18%", source: "鉅亨網", date: "05/02", summary: "手機與物聯網業務齊頭並進" }],
-    analysis: "AI晶片市場擴張，聯發科卡位優勢明顯。短期股價盤整，但中線買點已現。",
-    relatedTopics: ["AI手機晶片競爭", "天數與高通比較", "物聯網業務展望", "2025年出貨預測"],
-    relatedStocks: [{ name: "台積電", code: "2330", price: "1065", change: "+1.43%" }, { name: "高通", code: "QCOM", price: "168", change: "-0.45%" }, { name: "愛普科技", code: "3105", price: "285", change: "+2.12%" }],
+    closePrice: "3,420",
+    change: "+6.54%",
+    targetPrice: "3,800",
+    prevTargetPrice: "3,500",
+    targetUpgrade: "+8.6",
+    upside: "+11.1",
+    bullets: ["AI手機晶片4奈米制程領先", "2025全年EPS 66.17元YoY+12%", "外資持股56.6%籌碼穩定"],
+    trading: { marketCap: "5.47兆", shares: "16.0億股", foreignOwn: "56.56%", avgVol: "8,584張", week52High: "3,670", week52Low: "1,780" },
+    performance: [{ period: "3M", abs: "+28.5%", rel: "+22.1%" }, { period: "6M", abs: "+52.3%", rel: "+44.8%" }, { period: "12M", abs: "+92.1%", rel: "+76.5%" }],
+    technical: { ma5: "3,350", ma10: "3,180", ma20: "3,050", ma60: "2,820", kd_k: 74, kd_d: 68, rsi14: 71, macd: "48", macd_signal: "32", macd_hist: "16", support: "3,200", resistance: "3,700", trend: "強勢突破", summary: "歷史新高突破，KD黃金交叉，短線偏多但留意高位獲利賣壓" },
+    chips: { foreign_3d: -1380, foreign_10d: 8200, foreign_hold_pct: "56.56%", trust_3d: 185, trust_10d: 920, dealer_3d: 213, dealer_10d: 650, total_3d: -982, margin_balance: 9500, short_balance: 1200, summary: "外資連2賣但持股仍高，投信與自營商轉買，籌碼偏穩" },
+    fundamental: { pe_ratio: "51.83x", pb_ratio: "13.63x", dividend_yield: "3.07%", dividend_per_share: "105元(H1+H2 2025)", roe: "5.67%", roa: "3.21%", gross_margin: "46.13%", op_margin: "14.55%", net_margin: "18.08%", revenue_yoy: "-3.06%", eps_yoy: "+12.3%", debt_ratio: "22.1%", summary: "毛利率行業頂尖，EPS成長穩健，2026年上半年營收略弱" },
+    eps: { years: ["2025A", "2026Q1A", "2026F"], q1: [18.43, 16.5, null], q2: [17.50, null, null], q3: [15.84, null, null], q4: [14.40, null, null], annual: [66.17, null, 72.0] },
+    news: [{ title: "聯發科取得無形資產授權逾百億", source: "Moneydj理財網", date: "05/08", summary: "向Imagination、ARM等廠商取得軟體及非獨家授權，金額合計逾百億元" }, { title: "4月營收467億元月減26%", source: "Moneydj理財網", date: "05/08", summary: "4月合併營收46.74億元，月減26.07%，年減4.14%" }, { title: "聯發科創歷史新高漲逾6%", source: "Yahoo財經", date: "05/08", summary: "當日AI晶片重估行情推動，以3,630元創上市以來收盤新高" }],
+    analysis: "AI手機與邊緣AI晶片題材持續發酵，股價突破歷史新高。短期估值偏高，但中長線隨AI滲透率提升基本面可望回升。",
+    relatedTopics: ["AI手機晶片市占競爭", "高通Snapdragon比較", "物聯網業務展望", "4奈米製程進展"],
+    relatedStocks: [{ name: "台積電", code: "2330", price: "2,310", change: "+2.67%" }, { name: "高通", code: "QCOM", price: "168", change: "-0.45%" }, { name: "聯電", code: "2303", price: "55.8", change: "+1.09%" }],
     hasKgi: true
   },
   {
@@ -3437,23 +3420,23 @@ const MOCK_STOCK_DATA = [
     name: "鴻海精密工業股份有限公司",
     rating: "持有",
     ratingColor: "hold",
-    closePrice: "235.5",
-    change: "+0.64%",
-    targetPrice: "260",
-    prevTargetPrice: "255",
-    targetUpgrade: "+1.9",
-    upside: "+10.4",
-    bullets: ["EMS代工穩步復甦，iPhone 17需求樂觀", "2025年EPS估12.5元，YoY +8%", "MIH電動車商業化進度加速"],
-    trading: { marketCap: "1.8兆", shares: "77.5億股", foreignOwn: "35.2%", avgVol: "156,000張", week52High: "265", week52Low: "195" },
-    performance: [{ period: "3M", abs: "+8.3%", rel: "+5.1%" }, { period: "6M", abs: "+18.5%", rel: "+12.4%" }, { period: "12M", abs: "+22.1%", rel: "+10.8%" }],
-    technical: { ma5: "233", ma10: "228", ma20: "220", ma60: "205", kd_k: 55, kd_d: 52, rsi14: 54, macd: "0.4", macd_signal: "0.3", macd_hist: "0.1", support: "225", resistance: "250", trend: "溫和上升", summary: "MA多頭但斜率平緩，短期無強勢" },
-    chips: { foreign_3d: 3200, foreign_10d: 8500, foreign_hold_pct: "35.2%", trust_3d: 920, trust_10d: 2100, dealer_3d: -250, dealer_10d: -680, total_3d: 3870, margin_balance: 18000, short_balance: 2200, summary: "外資靜觀，投信緩步加碼，融資居高不下" },
-    fundamental: { pe_ratio: "18.8x", pb_ratio: "1.2x", dividend_yield: "3.8%", dividend_per_share: "9元", roe: "6.5%", roa: "4.2%", gross_margin: "8.5%", op_margin: "4.2%", net_margin: "3.8%", revenue_yoy: "+15.2%", eps_yoy: "+8.0%", debt_ratio: "52.1%", summary: "代工行業低利潤，但現金流穩健，殖利率誘人" },
-    eps: { years: ["2024", "2025F", "2026F"], q1: [2.8, 3.1, 3.4], q2: [3.2, 3.5, 3.8], q3: [3.5, 3.8, 4.1], q4: [3.0, 3.2, 3.5], annual: [12.5, 13.6, 14.8] },
-    news: [{ title: "鴻海斥資擴建鄭州廠", source: "工商時報", date: "05/05", summary: "為新一代iPhone量產做準備" }, { title: "MIH造車計畫商業化加速", source: "MoneyDJ", date: "05/03", summary: "預計2026年第一款車型上市" }, { title: "鴻海Q1毛利率小幅提升", source: "鉅亨網", date: "05/01", summary: "iPhone訂單超預期提升經營效率" }],
-    analysis: "代工景氣溫和復甦，新興業務逐步貢獻。EPS穩步成長，但估值偏低，適合穩健投資人。",
-    relatedTopics: ["iPhone 17代工進度", "MIH電動車進展", "越南廠擴產計畫", "EMS競爭態勢"],
-    relatedStocks: [{ name: "台積電", code: "2330", price: "1065", change: "+1.43%" }, { name: "和碩聯合", code: "4938", price: "85", change: "-1.25%" }, { name: "緯穎", code: "6669", price: "385", change: "+2.85%" }],
+    closePrice: "253.5",
+    change: "+3.89%",
+    targetPrice: "290",
+    prevTargetPrice: "270",
+    targetUpgrade: "+7.4",
+    upside: "+14.4",
+    bullets: ["AI伺服器訂單強勁領軍補漲", "2025全年EPS 13.62元年增30%", "外資連9買持股39%創近高"],
+    trading: { marketCap: "3.53兆", shares: "139.4億股", foreignOwn: "39.07%", avgVol: "98,226張", week52High: "265", week52Low: "158" },
+    performance: [{ period: "3M", abs: "+22.4%", rel: "+16.8%" }, { period: "6M", abs: "+38.5%", rel: "+30.2%" }, { period: "12M", abs: "+60.4%", rel: "+48.7%" }],
+    technical: { ma5: "248", ma10: "238", ma20: "225", ma60: "205", kd_k: 72, kd_d: 65, rsi14: 68, macd: "3.8", macd_signal: "2.6", macd_hist: "1.2", support: "240", resistance: "265", trend: "強勢上漲", summary: "外資連9買推升，MA多頭排列，短線偏多留意265元阻力" },
+    chips: { foreign_3d: 30089, foreign_10d: 298633, foreign_hold_pct: "39.07%", trust_3d: 342, trust_10d: 1850, dealer_3d: -1500, dealer_10d: -3200, total_3d: 28931, margin_balance: 22000, short_balance: 2800, summary: "外資連9日大舉買超近30萬張，投信同步加碼5日，籌碼面強勢" },
+    fundamental: { pe_ratio: "18.69x", pb_ratio: "2.00x", dividend_yield: "3.82%", dividend_per_share: "7.20元(2025)", roe: "2.81%", roa: "1.29%", gross_margin: "5.88%", op_margin: "3.28%", net_margin: "3.16%", revenue_yoy: "+29.74%", eps_yoy: "+30.0%", debt_ratio: "54.2%", summary: "代工毛利薄但AI伺服器新業務強勁，4月營收年增近30%，獲利能見度提升" },
+    eps: { years: ["2025A", "2026Q1E", "2026F"], q1: [3.03, 3.50, null], q2: [3.19, null, null], q3: [4.15, null, null], q4: [3.25, null, null], annual: [13.62, null, 16.5] },
+    news: [{ title: "軟銀擬與輝達鴻海合作AI伺服器生產", source: "鉅亨網", date: "05/08", summary: "日本軟銀正與NVIDIA及鴻海洽談，規劃2030年前在國內建立AI伺服器製造能力" }, { title: "鴻海與波蘭EMP合作評估EV廠", source: "財訊快報", date: "05/08", summary: "鴻海宣布與波蘭電動汽車公司EMP合作，共同評估在波蘭設立電動車製造與研發中心" }, { title: "分析師點名鴻海列COMPUTEX潛力股", source: "Yahoo股市", date: "05/08", summary: "外資分析師看好鴻海AI基礎建設訂單動能，列為COMPUTEX 2026重點受惠股" }],
+    analysis: "AI伺服器訂單爆發帶動股價突破，外資連買創近年新高。代工本業穩健、電動車與AI雙引擎並進，估值偏低具補漲空間。",
+    relatedTopics: ["AI伺服器供應鏈布局", "MIH電動車商業化", "越南廠擴產進度", "EMS競爭態勢"],
+    relatedStocks: [{ name: "廣達", code: "2382", price: "340.5", change: "-1.02%" }, { name: "緯穎", code: "6669", price: "4,880", change: "+6.56%" }, { name: "和碩聯合", code: "4938", price: "92", change: "+1.10%" }],
     hasKgi: true
   },
   {
@@ -3461,23 +3444,23 @@ const MOCK_STOCK_DATA = [
     name: "廣達電腦股份有限公司",
     rating: "增加持股",
     ratingColor: "buy",
-    closePrice: "195.5",
-    change: "+2.35%",
-    targetPrice: "235",
-    prevTargetPrice: "220",
-    targetUpgrade: "+6.8",
-    upside: "+20.2",
-    bullets: ["AI伺服器訂單爆炸性成長，產能供不應求", "2025年EPS估18.2元，YoY +35%", "法人連買12日，籌碼面強勢"],
-    trading: { marketCap: "1.6兆", shares: "82.0億股", foreignOwn: "54.8%", avgVol: "32,100張", week52High: "210", week52Low: "125" },
-    performance: [{ period: "3M", abs: "+32.5%", rel: "+28.1%" }, { period: "6M", abs: "+65.2%", rel: "+58.9%" }, { period: "12M", abs: "+82.1%", rel: "+72.5%" }],
-    technical: { ma5: "192", ma10: "180", ma20: "165", ma60: "140", kd_k: 78, kd_d: 72, rsi14: 72, macd: "2.1", macd_signal: "1.5", macd_hist: "0.6", support: "180", resistance: "210", trend: "強勢上漲", summary: "K線突破多重壓力，KD高檔但未背離，買超主導" },
-    chips: { foreign_3d: 12850, foreign_10d: 38500, foreign_hold_pct: "54.8%", trust_3d: 3200, trust_10d: 9800, dealer_3d: 450, dealer_10d: 1200, total_3d: 16500, margin_balance: 8500, short_balance: 800, summary: "外資狂買，投信同步加碼，籌碼面極強" },
-    fundamental: { pe_ratio: "10.7x", pb_ratio: "2.8x", dividend_yield: "2.1%", dividend_per_share: "5元", roe: "26.2%", roa: "21.5%", gross_margin: "12.5%", op_margin: "10.8%", net_margin: "9.5%", revenue_yoy: "+45.8%", eps_yoy: "+35.0%", debt_ratio: "18.5%", summary: "獲利爆炸性成長，估值仍有想像空間，負債健康" },
-    eps: { years: ["2024", "2025F", "2026F"], q1: [3.8, 5.2, 6.5], q2: [4.2, 5.8, 7.2], q3: [4.5, 6.2, 7.8], q4: [3.5, 5.0, 6.0], annual: [16.0, 22.2, 27.5] },
-    news: [{ title: "廣達AI伺服器訂單再創新高", source: "鉅亨網", date: "05/06", summary: "客戶需求強勁，產能全力衝刺" }, { title: "瑞銀重申買進，目標價上調至235", source: "MoneyDJ", date: "05/05", summary: "AI超級週期才剛開始" }, { title: "廣達鄭州新廠Q2投產", source: "工商時報", date: "05/04", summary: "AI伺服器產能將翻倍成長" }],
-    analysis: "AI伺服器浪潮核心受惠者，訂單能見度強。短期漲幅雖大，但基本面支撐持續向上。",
-    relatedTopics: ["AI伺服器市場規模", "與鴻海技術比較", "產能擴張計畫", "下游廠商需求"],
-    relatedStocks: [{ name: "緯穎", code: "6669", price: "385", change: "+2.85%" }, { name: "台積電", code: "2330", price: "1065", change: "+1.43%" }, { name: "聯發科", code: "2454", price: "1180", change: "+0.85%" }],
+    closePrice: "344",
+    change: "-1.02%",
+    targetPrice: "420",
+    prevTargetPrice: "380",
+    targetUpgrade: "+10.5",
+    upside: "+22.1",
+    bullets: ["4月營收3399億元單月歷史次高", "2026年EPS估19.45元年增67%", "外資持股26.8%持續加碼"],
+    trading: { marketCap: "13.37兆", shares: "38.9億股", foreignOwn: "26.79%", avgVol: "16,960張", week52High: "355", week52Low: "120" },
+    performance: [{ period: "3M", abs: "+85.7%", rel: "+78.5%" }, { period: "6M", abs: "+165.4%", rel: "+152.1%" }, { period: "12M", abs: "+186.6%", rel: "+170.8%" }],
+    technical: { ma5: "342", ma10: "320", ma20: "295", ma60: "235", kd_k: 68, kd_d: 62, rsi14: 66, macd: "18.5", macd_signal: "13.2", macd_hist: "5.3", support: "320", resistance: "360", trend: "強勢上漲", summary: "MA多頭排列，量能配合，短期震盪整理後可望續攻" },
+    chips: { foreign_3d: 8500, foreign_10d: 32000, foreign_hold_pct: "26.79%", trust_3d: 1850, trust_10d: 7200, dealer_3d: 320, dealer_10d: 980, total_3d: 10670, margin_balance: 6200, short_balance: 420, summary: "外資持續買超，投信同步加碼，法人籌碼面強勢" },
+    fundamental: { pe_ratio: "17.69x", pb_ratio: "4.12x", dividend_yield: "5.61%", dividend_per_share: "15.60元(H2 2025)", roe: "9.21%", roa: "4.85%", gross_margin: "6.33%", op_margin: "3.76%", net_margin: "4.30%", revenue_yoy: "+120.71%", eps_yoy: "+67.0%", debt_ratio: "28.5%", summary: "AI伺服器帶動營收爆發式成長，毛利率雖薄但規模效益提升獲利" },
+    eps: { years: ["2025A", "2026Q1A", "2026F"], q1: [5.76, 5.06, null], q2: [null, null, null], q3: [null, null, null], q4: [5.76, null, null], annual: [19.45, null, 26.5] },
+    news: [{ title: "廣達4月營收3399億元登單月次高", source: "中央社財經", date: "05/08", summary: "4月合併營收3,399億元，年增120.71%，創單月歷史第二高紀錄，AI伺服器需求強勁" }, { title: "廣達緯創前四月累計逾兆元", source: "Yahoo股市", date: "05/08", summary: "電子五虎4月營收出爐，廣達與緯創前四月累計均突破兆元，AI伺服器業務稱霸" }, { title: "廣達列COMPUTEX 2026投資重點股", source: "Yahoo股市", date: "05/05", summary: "分析師點名廣達等20家大廠規劃赴美投資逾1兆元，列COMPUTEX受惠核心標的" }],
+    analysis: "AI伺服器超級週期核心受惠者，4月單月營收創次高、全年YoY達120%。P/E僅17.7倍估值合理，殖利率5.6%具防禦性，中長線持續看多。",
+    relatedTopics: ["AI伺服器市場規模", "與緯穎比較分析", "美國資料中心訂單", "下游需求能見度"],
+    relatedStocks: [{ name: "緯穎", code: "6669", price: "4,880", change: "+6.56%" }, { name: "鴻海", code: "2317", price: "253.5", change: "+3.89%" }, { name: "台積電", code: "2330", price: "2,310", change: "+2.67%" }],
     hasKgi: true
   },
   {
@@ -3485,23 +3468,23 @@ const MOCK_STOCK_DATA = [
     name: "緯穎科技股份有限公司",
     rating: "增加持股",
     ratingColor: "buy",
-    closePrice: "385",
-    change: "+2.85%",
-    targetPrice: "480",
-    prevTargetPrice: "450",
-    targetUpgrade: "+6.7",
-    upside: "+24.7",
-    bullets: ["AI伺服器與邊緣運算雙引擎增長，訂單能見度強", "2025年EPS估28.5元，YoY +42%", "外資持股創新高，機構持股比例達82%"],
-    trading: { marketCap: "5.2兆", shares: "135.0億股", foreignOwn: "82.0%", avgVol: "18,500張", week52High: "420", week52Low: "220" },
-    performance: [{ period: "3M", abs: "+38.2%", rel: "+33.5%" }, { period: "6M", abs: "+72.5%", rel: "+65.8%" }, { period: "12M", abs: "+95.2%", rel: "+85.1%" }],
-    technical: { ma5: "375", ma10: "350", ma20: "320", ma60: "280", kd_k: 82, kd_d: 78, rsi14: 75, macd: "3.2", macd_signal: "2.2", macd_hist: "1.0", support: "360", resistance: "400", trend: "強勢漲升", summary: "連漲突破，KD高檔，RSI超買，宜留意獲利了結" },
-    chips: { foreign_3d: 22500, foreign_10d: 68000, foreign_hold_pct: "82.0%", trust_3d: 5800, trust_10d: 18200, dealer_3d: 1200, dealer_10d: 3500, total_3d: 29500, margin_balance: 3200, short_balance: 280, summary: "外資主導，投信加碼，融資低位，籌碼極強" },
-    fundamental: { pe_ratio: "13.5x", pb_ratio: "4.2x", dividend_yield: "1.8%", dividend_per_share: "8元", roe: "31.2%", roa: "25.8%", gross_margin: "18.5%", op_margin: "16.2%", net_margin: "14.8%", revenue_yoy: "+52.1%", eps_yoy: "+42.0%", debt_ratio: "22.1%", summary: "成長性頂尖，ROE卓越，負債管理得當，未來潛力大" },
-    eps: { years: ["2024", "2025F", "2026F"], q1: [5.8, 7.8, 10.2], q2: [6.5, 8.8, 11.5], q3: [7.2, 9.5, 12.2], q4: [5.5, 7.5, 9.8], annual: [25.0, 35.6, 44.7] },
-    news: [{ title: "緯穎AI伺服器訂單簽單再創新高", source: "工商時報", date: "05/06", summary: "全年訂單能見度至少六個月以上" }, { title: "摩根士丹利上調目標價至480元", source: "MoneyDJ", date: "05/05", summary: "AI浪潮才剛進入加速期" }, { title: "緯穎泰國廠投產，產能倍增", source: "鉅亨網", date: "05/03", summary: "應對全球AI伺服器需求爆發" }],
-    analysis: "AI基礎建設龍頭，成長動能強勁。股價大幅上漲後，短期宜觀察整固，中長線前景看好。",
-    relatedTopics: ["AI伺服器供應鏈", "超微與英特爾動態", "伺服器散熱挑戰", "全球資料中心擴張"],
-    relatedStocks: [{ name: "廣達", code: "2382", price: "195.5", change: "+2.35%" }, { name: "台積電", code: "2330", price: "1065", change: "+1.43%" }, { name: "聯發科", code: "2454", price: "1180", change: "+0.85%" }],
+    closePrice: "4,880",
+    change: "+6.56%",
+    targetPrice: "6,000",
+    prevTargetPrice: "5,500",
+    targetUpgrade: "+9.1",
+    upside: "+22.9",
+    bullets: ["Q1營收年增62%獲利創歷史新高", "2026全年EPS估310元YoY+13%", "外資持股31.8%持續加碼中"],
+    trading: { marketCap: "9.07兆", shares: "18.6億股", foreignOwn: "31.82%", avgVol: "3,200張", week52High: "5,210", week52Low: "1,550" },
+    performance: [{ period: "3M", abs: "+115.0%", rel: "+105.8%" }, { period: "6M", abs: "+215.5%", rel: "+202.1%" }, { period: "12M", abs: "+310.2%", rel: "+290.5%" }],
+    technical: { ma5: "4,650", ma10: "4,280", ma20: "3,920", ma60: "3,100", kd_k: 78, kd_d: 72, rsi14: 74, macd: "185", macd_signal: "128", macd_hist: "57", support: "4,500", resistance: "5,250", trend: "強勢漲升", summary: "突破近期整理平台，KD黃金交叉，量能擴增，短線偏多" },
+    chips: { foreign_3d: 8500, foreign_10d: 22000, foreign_hold_pct: "31.82%", trust_3d: 1200, trust_10d: 4800, dealer_3d: 350, dealer_10d: 980, total_3d: 10050, margin_balance: 850, short_balance: 45, summary: "外資持續加碼，投信跟進，融資餘額低，籌碼面乾淨" },
+    fundamental: { pe_ratio: "17.74x", pb_ratio: "6.89x", dividend_yield: "3.03%", dividend_per_share: "135元(2025估)", roe: "10.66%", roa: "5.82%", gross_margin: "7.55%", op_margin: "6.31%", net_margin: "6.49%", revenue_yoy: "+53.22%", eps_yoy: "+13.0%", debt_ratio: "30.2%", summary: "AI資料中心伺服器龍頭，2025全年營收9507億年增164%，獲利能見度高" },
+    eps: { years: ["2025A", "2026Q1A", "2026F"], q1: [74.21, 75.95, null], q2: [null, null, null], q3: [null, null, null], q4: [null, null, null], annual: [275.06, null, 310.0] },
+    news: [{ title: "緯穎Q1營收年增62%、EPS 75.95元", source: "中央社財經", date: "05/07", summary: "Q1合併營收2,765億元年增62%，基本EPS 75.95元，盈利創歷史同期新高" }, { title: "緯穎子公司增資5億美元支援擴產", source: "中央社財經", date: "05/07", summary: "董事會通過對子公司Wiwynn International Corporation增資5億美元，支援全球業務擴張" }, { title: "緯穎4月營收年增29.67%", source: "中央社財經", date: "05/07", summary: "4月合併營收827億元，年增29.67%，前4月累計年增53.22%" }],
+    analysis: "AI資料中心超級週期最直接受惠者，Q1業績創高且訂單能見度強。P/E僅17.7倍相對低估，子公司5億美元增資顯示長線擴張決心，中長線持續看多。",
+    relatedTopics: ["AI資料中心伺服器市場", "超微AMD伺服器競合", "散熱技術挑戰", "全球資料中心擴張趨勢"],
+    relatedStocks: [{ name: "廣達", code: "2382", price: "344", change: "-1.02%" }, { name: "鴻海", code: "2317", price: "253.5", change: "+3.89%" }, { name: "台積電", code: "2330", price: "2,310", change: "+2.67%" }],
     hasKgi: true
   },
   {
@@ -3525,32 +3508,80 @@ const MOCK_STOCK_DATA = [
     news: [{ title: "元大台灣50納入台積電ADR", source: "MoneyDJ", date: "05/05", summary: "國際投資人更便利布局台灣大型股" }, { title: "0050成分股Q1獲利超預期", source: "工商時報", date: "05/04", summary: "AI題材驅動整體EPS成長" }, { title: "0050法人持股比例創新高", source: "鉅亨網", date: "05/02", summary: "機構看好台灣科技龍頭前景" }],
     analysis: "台灣大型股基金，持股權重科技股比例高。受惠AI浪潮，但整體估值偏高，適合波段操作。",
     relatedTopics: ["成分股權重變化", "與0056配息比較", "台灣50 vs 台灣綠能", "ETF選股策略"],
-    relatedStocks: [{ name: "台積電", code: "2330", price: "1065", change: "+1.43%" }, { name: "聯發科", code: "2454", price: "1180", change: "+0.85%" }, { name: "鴻海", code: "2317", price: "235.5", change: "+0.64%" }],
+    relatedStocks: [{ name: "台積電", code: "2330", price: "2,310", change: "+2.67%" }, { name: "聯發科", code: "2454", price: "3,420", change: "+6.54%" }, { name: "鴻海", code: "2317", price: "253.5", change: "+3.89%" }],
     hasKgi: false
   },
   {
     ticker: "NVIDIA NVDA",
-    name: "英偉達公司",
+    name: "輝達（英偉達）公司",
     rating: "增加持股",
     ratingColor: "buy",
-    closePrice: "142.5",
-    change: "+1.82%",
-    targetPrice: "180",
-    prevTargetPrice: "170",
-    targetUpgrade: "+5.9",
-    upside: "+26.3",
-    bullets: ["AI晶片寡頭地位穩固，供應鏈缺貨持續","2025年EPS估18.5美元，YoY +38%","機構持股達92%，籌碼高度集中"],
-    trading: { marketCap: "3.5兆美元", shares: "24.5億股", foreignOwn: "92.0%", avgVol: "58,500張", week52High: "155", week52Low: "85" },
-    performance: [{ period: "3M", abs: "+28.5%", rel: "+22.1%" }, { period: "6M", abs: "+48.2%", rel: "+41.5%" }, { period: "12M", abs: "+85.2%", rel: "+72.8%" }],
-    technical: { ma5: "140", ma10: "132", ma20: "125", ma60: "108", kd_k: 76, kd_d: 70, rsi14: 70, macd: "2.8", macd_signal: "2.0", macd_hist: "0.8", support: "132", resistance: "150", trend: "強勢漲升", summary: "K線多頭排列，KD高檔未背離，動能持續" },
-    chips: { foreign_3d: 28500, foreign_10d: 82000, foreign_hold_pct: "92.0%", trust_3d: 6200, trust_10d: 18500, dealer_3d: 850, dealer_10d: 2100, total_3d: 35550, margin_balance: 5200, short_balance: 320, summary: "機構主導，散戶被動跟風，籌碼高度集中" },
-    fundamental: { pe_ratio: "52.1x", pb_ratio: "18.5x", dividend_yield: "0.05%", dividend_per_share: "0.04美元", roe: "88.5%", roa: "65.2%", gross_margin: "68.2%", op_margin: "62.1%", net_margin: "55.8%", revenue_yoy: "+126.0%", eps_yoy: "+38.0%", debt_ratio: "8.5%", summary: "超級成長股，利潤率驚人，估值全球最高，風險大" },
-    eps: { years: ["2024", "2025F", "2026F"], q1: [4.0, 5.2, 6.8], q2: [4.5, 5.8, 7.5], q3: [4.8, 6.2, 8.0], q4: [4.2, 5.5, 7.0], annual: [17.5, 22.7, 29.3] },
-    news: [{ title: "NVIDIA BB200晶片發表，效能業界領先", source: "彭博社", date: "05/06", summary: "AI次世代架構確立龍頭地位" }, { title: "台灣設立研發中心，搶AI人才", source: "聯合報", date: "05/04", summary: "在台人數將達500人以上" }, { title: "NVIDIA與台積電合作深化", source: "鉅亨網", date: "05/02", summary: "聯手開發3奈米高階晶片" }],
-    analysis: "AI浪潮龍頭，成長爆發。但估值已反映未來3年成長，短期高檔需留意利空。長期看好，短期風險高。",
-    relatedTopics: ["GPU市場競爭格局", "與AMD比較分析", "晶片代工趨勢", "AI運算需求展望"],
-    relatedStocks: [{ name: "台積電", code: "2330", price: "1065", change: "+1.43%" }, { name: "聯發科", code: "2454", price: "1180", change: "+0.85%" }, { name: "AMD", code: "AMD", price: "225", change: "-0.55%" }],
+    closePrice: "$215.77",
+    change: "+2.02%",
+    targetPrice: "$260",
+    prevTargetPrice: "$240",
+    targetUpgrade: "+8.3",
+    upside: "+20.5",
+    bullets: ["GPU AI算力寡頭市值逾5兆美元", "P/E 43.95倍估值趨合理化", "52周高低差達88%波動大"],
+    trading: { marketCap: "5.244兆美元", shares: "244億股", foreignOwn: "—", avgVol: "280,000千股", week52High: "$217.80", week52Low: "$115.21" },
+    performance: [{ period: "3M", abs: "+38.5%", rel: "+32.1%" }, { period: "6M", abs: "+52.8%", rel: "+44.5%" }, { period: "12M", abs: "+87.3%", rel: "+72.8%" }],
+    technical: { ma5: "210", ma10: "198", ma20: "185", ma60: "158", kd_k: 76, kd_d: 70, rsi14: 72, macd: "5.8", macd_signal: "4.1", macd_hist: "1.7", support: "195", resistance: "218", trend: "強勢漲升", summary: "逼近52周高點$217.80，MA多頭排列，突破即可創新高，動能強" },
+    chips: { foreign_3d: 42000, foreign_10d: 125000, foreign_hold_pct: "75.0%", trust_3d: 8500, trust_10d: 22000, dealer_3d: 1200, dealer_10d: 3800, total_3d: 51700, margin_balance: 8200, short_balance: 580, summary: "機構法人主導，散戶跟風，籌碼高度集中，做空比例低" },
+    fundamental: { pe_ratio: "43.95x", pb_ratio: "35.2x", dividend_yield: "0.03%", dividend_per_share: "$0.01美元", roe: "115.8%", roa: "72.4%", gross_margin: "74.6%", op_margin: "61.5%", net_margin: "55.0%", revenue_yoy: "+78.0%", eps_yoy: "+130.0%", debt_ratio: "9.2%", summary: "GPU算力霸主，毛利率創新高，ROE超百%，市值破5兆美元里程碑" },
+    eps: { years: ["FY2025A", "FY2026Q1E", "FY2026F"], q1: [5.16, 7.20, null], q2: [6.02, null, null], q3: [7.03, null, null], q4: [6.43, null, null], annual: [24.64, null, 32.5] },
+    news: [{ title: "NVDA股價漲2%逼近52周高點", source: "Yahoo TW股市", date: "05/08", summary: "輝達收$215.77美元漲2.02%，市值5.244兆美元，距52周高$217.80僅差1%" }, { title: "輝達Blackwell供應鏈滿載，台廠受惠", source: "鉅亨網", date: "05/06", summary: "Blackwell GB200/GB300系列訂單強勁，廣達、緯穎、鴻海均為主要ODM供應商" }, { title: "美中AI晶片禁令談判出現轉機", source: "彭博社", date: "05/05", summary: "美中貿易談判中AI晶片出口限制議題出現鬆動跡象，利多NVDA中國市場預期" }],
+    analysis: "AI GPU算力龍頭，市值突破5兆美元。P/E從高峰70倍降至44倍估值趨合理。Blackwell超級算力週期啟動，FY2026EPS有望達$32以上，中長線看多。",
+    relatedTopics: ["Blackwell GPU供應鏈", "與AMD MI300比較", "AI資料中心算力需求", "美中晶片禁令影響"],
+    relatedStocks: [{ name: "台積電", code: "2330", price: "2,310", change: "+2.67%" }, { name: "廣達", code: "2382", price: "344", change: "-1.02%" }, { name: "AMD", code: "AMD", price: "118.5", change: "+1.25%" }],
     hasKgi: true
+  },
+  {
+    ticker: "凱基金 2883",
+    name: "凱基金融控股股份有限公司",
+    rating: "持有",
+    ratingColor: "hold",
+    closePrice: "22.90",
+    change: "+2.00%",
+    targetPrice: "26.00",
+    prevTargetPrice: "24.50",
+    targetUpgrade: "+6.1",
+    upside: "+13.5",
+    bullets: ["P/E 13.86倍低於金融股均值", "殖利率4.88%現金收益穩健", "連4紅動能回升籌碼轉強"],
+    trading: { marketCap: "3,810億", shares: "166.4億股", foreignOwn: "28.5%", avgVol: "58,127張", week52High: "24.20", week52Low: "17.80" },
+    performance: [{ period: "3M", abs: "+12.3%", rel: "+6.5%" }, { period: "6M", abs: "+18.5%", rel: "+10.2%" }, { period: "12M", abs: "+28.6%", rel: "+16.4%" }],
+    technical: { ma5: "22.50", ma10: "21.80", ma20: "21.20", ma60: "20.50", kd_k: 68, kd_d: 62, rsi14: 65, macd: "0.28", macd_signal: "0.18", macd_hist: "0.10", support: "21.50", resistance: "24.00", trend: "緩步上升", summary: "連4日收紅，KD黃金交叉，短線偏多但量能仍需觀察" },
+    chips: { foreign_3d: 2800, foreign_10d: 8500, foreign_hold_pct: "28.5%", trust_3d: 450, trust_10d: 1200, dealer_3d: -180, dealer_10d: -420, total_3d: 3070, margin_balance: 12000, short_balance: 1800, summary: "外資緩步加碼，投信同步跟進，整體籌碼溫和偏多" },
+    fundamental: { pe_ratio: "13.86x", pb_ratio: "1.30x", dividend_yield: "4.88%", dividend_per_share: "1.12元(估)", roe: "3.47%", roa: "0.38%", gross_margin: "78.38%", op_margin: "39.14%", net_margin: "22.5%", revenue_yoy: "+8.2%", eps_yoy: "+5.0%", debt_ratio: "92.1%", summary: "金控槓桿高屬正常，ROE偏低但殖利率具吸引力，子公司承銷業務穩健" },
+    eps: { years: ["2025A", "2026Q1E", "2026F"], q1: [0.58, 0.65, null], q2: [0.62, null, null], q3: [0.65, null, null], q4: [0.65, null, null], annual: [2.50, null, 2.75] },
+    news: [{ title: "凱基金PT KGI印尼子公司委員辭職", source: "中央社財經", date: "05/08", summary: "PT KGI Sekuritas Indonesia一名委員宣布即時辭職，對整體業務影響有限" }, { title: "凱基銀行承銷凱基證券公司債24億", source: "中央社財經", date: "05/07", summary: "子公司凱基銀行承銷凱基證券115年度第1次無擔保普通公司債24億元" }, { title: "凱基銀行承銷次順位債15億元", source: "中央社財經", date: "05/07", summary: "凱基銀行承銷凱基證券15億元次順位無擔保公司債，10年期固定利率2.40%" }],
+    analysis: "台灣中型金控，證券、銀行、投信三大子業務均衡發展。殖利率近5%具防禦性，P/E低於同業均值，股價動能回升中，適合穩健型投資人配置。",
+    relatedTopics: ["金控股比較分析", "台灣利率走勢影響", "證券業務前景", "金融股殖利率排名"],
+    relatedStocks: [{ name: "元大金", code: "2885", price: "38.5", change: "+1.32%" }, { name: "富邦金", code: "2881", price: "98.5", change: "+0.82%" }, { name: "中信金", code: "2891", price: "42.8", change: "+0.95%" }],
+    hasKgi: true
+  },
+  {
+    ticker: "台泥 1101",
+    name: "台灣水泥股份有限公司",
+    rating: "觀望",
+    ratingColor: "hold",
+    closePrice: "25.00",
+    change: "-1.96%",
+    targetPrice: "28.00",
+    prevTargetPrice: "27.00",
+    targetUpgrade: "+3.7",
+    upside: "+12.0",
+    bullets: ["歐洲業務佔比44%歐洲掛牌評估", "信義區268億開發案長線題材", "EPS轉虧短期基本面承壓"],
+    trading: { marketCap: "1,918億", shares: "76.7億股", foreignOwn: "22.4%", avgVol: "27,466張", week52High: "31.50", week52Low: "22.80" },
+    performance: [{ period: "3M", abs: "-5.8%", rel: "-11.6%" }, { period: "6M", abs: "-8.2%", rel: "-16.0%" }, { period: "12M", abs: "-18.5%", rel: "-30.7%" }],
+    technical: { ma5: "25.50", ma10: "25.80", ma20: "26.20", ma60: "27.80", kd_k: 32, kd_d: 38, rsi14: 38, macd: "-0.42", macd_signal: "-0.28", macd_hist: "-0.14", support: "23.50", resistance: "27.00", trend: "弱勢整理", summary: "MA空頭排列，KD偏低但未到超賣，短線反彈後仍需確認支撐" },
+    chips: { foreign_3d: -850, foreign_10d: -2400, foreign_hold_pct: "22.4%", trust_3d: -220, trust_10d: -680, dealer_3d: 120, dealer_10d: 350, total_3d: -950, margin_balance: 8500, short_balance: 2200, summary: "外資持續賣超，投信同步減碼，融資餘額偏高需留意" },
+    fundamental: { pe_ratio: "—", pb_ratio: "0.62x", dividend_yield: "3.20%", dividend_per_share: "0.80元(2025)", roe: "-0.52%", roa: "-0.18%", gross_margin: "18.49%", op_margin: "3.76%", net_margin: "-1.80%", revenue_yoy: "-4.5%", eps_yoy: "虧損", debt_ratio: "58.5%", summary: "Q4 2025 EPS轉負，本益比暫不適用，但P/B僅0.62倍具資產支撐，關注歐洲掛牌進展" },
+    eps: { years: ["2025A", "2026Q1E", "2026F"], q1: [-0.12, 0.05, null], q2: [0.08, null, null], q3: [0.18, null, null], q4: [-0.32, null, null], annual: [-0.18, null, 0.50] },
+    news: [{ title: "台泥十大股東曝光顏文隆家族列第三", source: "中央社財經", date: "05/07", summary: "年報揭露前十大股東，顏文隆家族投資公司持股1.54%居第三，辜仲諒持股6.42%為最大個人股東" }, { title: "台泥擬赴歐洲掛牌首選倫敦巴黎等四地", source: "中央社財經", date: "05/04", summary: "台泥委託三家國際投行評估歐洲掛牌，優先考量倫敦、巴黎、法蘭克福、阿姆斯特丹" }, { title: "台泥斥268億活化信義區資產", source: "中央社財經", date: "04/09", summary: "董事會通過268億元信義區三棟近零碳辦公大樓開發案，預計2031年落成" }],
+    analysis: "水泥本業受全球需求疲弱拖累，2025年轉虧損。但歐洲掛牌評估與信義區不動產開發提供長線想像空間，P/B僅0.62倍具資產折價，屬長線佈局型標的。",
+    relatedTopics: ["歐洲資本市場掛牌計畫", "信義區不動產開發", "全球水泥需求展望", "台灣傳產股評估"],
+    relatedStocks: [{ name: "亞泥", code: "1102", price: "38.5", change: "-0.52%" }, { name: "嘉泥", code: "1103", price: "18.5", change: "+0.27%" }, { name: "東泥", code: "1104", price: "22.1", change: "-0.45%" }],
+    hasKgi: false
   }
 ];
 
@@ -3569,7 +3600,7 @@ const MOCK_GENERIC_DATA = [
     response: {
       contentBlock: "<div style='font-size:14px;line-height:1.8;color:var(--text-main);font-family:\"Noto Sans TC\",sans-serif;'><h3 style='margin-bottom:8px;'>AI概念股投資方向</h3><p>台灣AI相關股票主要分為幾類：</p><p><strong>1. AI晶片設計</strong>：聯發科(2454)、聯電(2303)</p><p><strong>2. AI伺服器</strong>：廣達(2382)、緯穎(6669)、鴻海(2317)</p><p><strong>3. AI封裝/測試</strong>：日月光(3711)、矽品(2325)</p></div>",
       relatedTopics: ["台灣AI供應鏈", "AI晶片技術趨勢", "AI投資組合配置", "法人動向"],
-      relatedStocks: [{ name: "廣達", code: "2382", price: "195.5", change: "+2.35%" }, { name: "聯發科", code: "2454", price: "1180", change: "+0.85%" }],
+      relatedStocks: [{ name: "廣達", code: "2382", price: "344", change: "-1.02%" }, { name: "聯發科", code: "2454", price: "3,420", change: "+6.54%" }],
       hasKgi: false
     }
   },
@@ -3578,159 +3609,20 @@ const MOCK_GENERIC_DATA = [
     response: {
       contentBlock: "<div style='font-size:14px;line-height:1.8;color:var(--text-main);font-family:\"Noto Sans TC\",sans-serif;'><h3 style='margin-bottom:8px;'>台股市場概況</h3><p>目前為 Demo 模式，請設定 API Key 以取得即時市場資訊。</p><p>加權指數近期表現受 AI 題材與法人動向主導，建議參考三大法人買賣超與技術面支撐。</p></div>",
       relatedTopics: ["三大法人動向", "台股技術面分析", "產業輪動機會", "ETF定期定額"],
-      relatedStocks: [{ name: "台積電", code: "2330", price: "1065", change: "+1.43%" }, { name: "元大台灣50", code: "0050", price: "178.5", change: "+0.56%" }],
+      relatedStocks: [{ name: "台積電", code: "2330", price: "2,310", change: "+2.67%" }, { name: "元大台灣50", code: "0050", price: "97.70", change: "+1.17%" }],
       hasKgi: false
     }
   }
 ];
-
-const AI_MODEL = 'gemini-2.5-flash-lite';
-
-function getGeminiUrl() {
-  return `https://generativelanguage.googleapis.com/v1beta/models/${AI_MODEL}:generateContent?key=${getApiKey()}`;
-}
-
-function buildGeminiBody(systemPrompt, userContent, maxTokens, useWebSearch = true) {
-  const body = {
-    contents: [{ role: 'user', parts: [{ text: userContent }] }],
-    generationConfig: { maxOutputTokens: maxTokens }
-  };
-  if (systemPrompt) body.systemInstruction = { parts: [{ text: systemPrompt }] };
-  if (useWebSearch) body.tools = [{ googleSearch: {} }];
-  return body;
-}
-
-function extractGeminiText(data) {
-  return (data.candidates?.[0]?.content?.parts || [])
-    .filter(p => !p.thought)
-    .map(p => p.text || '')
-    .join('')
-    .trim();
-}
-
-async function fetchGemini(body) {
-  const DELAYS = [2000, 5000]; // retry after 2 s, then 5 s
-  for (let attempt = 0; attempt <= DELAYS.length; attempt++) {
-    const resp = await fetch(getGeminiUrl(), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-    if ((resp.status === 429 || resp.status === 503) && attempt < DELAYS.length) {
-      await new Promise(r => setTimeout(r, DELAYS[attempt]));
-      continue;
-    }
-    if (!resp.ok) {
-      let detail = `API ${resp.status}`;
-      try { const e = await resp.json(); detail = `API ${resp.status}: ${e?.error?.message || e?.error?.status || ''}`; } catch(_) {}
-      console.error('[Gemini error]', detail, body);
-      throw new Error(detail);
-    }
-    const data = await resp.json();
-    return extractGeminiText(data);
-  }
-  throw new Error('API 429: rate limit, please retry later');
-}
 
 /* ── Global compare state ──*/
 const MAX_COMPARE = 4;
 const compareList  = new Map(); // ticker → parsed stock data
 
 async function callStockAI(userQuery) {
-  const today = new Date().toLocaleDateString('zh-TW', {year:'numeric',month:'2-digit',day:'2-digit'});
+  await new Promise(r => setTimeout(r, 400));
   const curYear = new Date().getFullYear();
-  const y0 = curYear - 1, y1 = curYear, y2 = curYear + 1;
-
-  const systemPrompt = `你是台股／美股投資研究員。你的回覆必須只有一個 JSON 物件,從 { 開始到 } 結束,不得有任何前言、說明文字、markdown 語法或 \`\`\` 符號。
-
-【搜尋步驟】
-1. 搜尋「{股名} 股價 今日 技術分析 法人」→ 即時報價、K線、籌碼
-2. 搜尋「{股名} 本益比 EPS 目標價 新聞 ${curYear}」→ 估值、財務、最新消息
-
-【輸出格式 — 所有欄位必填,查不到請根據同產業合理估算並在 analysis 說明】
-{
-  "ticker": "中文名稱 代號（美股格式：公司中文名 TICKER）",
-  "name": "完整法定名稱（繁體中文）",
-  "rating": "增加持股",
-  "ratingColor": "buy",
-  "closePrice": "數字字串（不含符號）",
-  "change": "+2.41%",
-  "targetPrice": "數字字串",
-  "prevTargetPrice": "數字字串",
-  "targetUpgrade": "+9.5",
-  "upside": "+16.6",
-  "bullets": [
-    "核心邏輯一：15字內含數據",
-    "核心邏輯二：15字內含數據",
-    "核心邏輯三：15字內含數據"
-  ],
-  "trading": {
-    "marketCap": "25.6兆",
-    "shares": "259.3億股",
-    "foreignOwn": "78.4%",
-    "avgVol": "42,318張",
-    "week52High": "1,080",
-    "week52Low": "620"
-  },
-  "performance": [
-    {"period":"3M","abs":"+18.2%","rel":"+12.4%"},
-    {"period":"6M","abs":"+32.5%","rel":"+24.1%"},
-    {"period":"12M","abs":"+54.8%","rel":"+38.7%"}
-  ],
-  "technical": {
-    "ma5": "數字","ma10": "數字","ma20": "數字","ma60": "數字",
-    "kd_k": 65,"kd_d": 58,
-    "rsi14": 61,
-    "macd": "1.2","macd_signal": "0.8","macd_hist": "0.4",
-    "support": "支撐價數字","resistance": "壓力價數字",
-    "trend": "緩步上漲",
-    "summary": "多頭排列,KD 黃金交叉,短期偏多"
-  },
-  "chips": {
-    "foreign_3d": 18432,"foreign_10d": 62100,"foreign_hold_pct": "78.4%",
-    "trust_3d": 2100,"trust_10d": 8500,
-    "dealer_3d": -450,"dealer_10d": -1200,
-    "total_3d": 20082,
-    "margin_balance": 25000,"short_balance": 3200,
-    "summary": "外資連買,投信同步加碼,籌碼集中偏多"
-  },
-  "fundamental": {
-    "pe_ratio": "24.5x","pb_ratio": "8.2x",
-    "dividend_yield": "1.8%","dividend_per_share": "14元",
-    "roe": "29.8%","roa": "18.4%",
-    "gross_margin": "55.8%","op_margin": "42.1%","net_margin": "38.9%",
-    "revenue_yoy": "+34.2%","eps_yoy": "+18.9%",
-    "debt_ratio": "28.3%",
-    "summary": "獲利能力頂尖,殖利率穩健,負債健康"
-  },
-  "eps": {
-    "years": ["${y0}","${y1}F","${y2}F"],
-    "q1": [數字,數字,數字],
-    "q2": [數字,數字,數字],
-    "q3": [數字,數字,數字],
-    "q4": [數字,數字,數字],
-    "annual": [數字,數字,數字]
-  },
-  "news": [
-    {"title":"新聞標題","source":"鉅亨網","date":"05/06","summary":"20字內摘要"},
-    {"title":"新聞標題","source":"MoneyDJ","date":"05/05","summary":"20字內摘要"},
-    {"title":"新聞標題","source":"工商時報","date":"05/04","summary":"20字內摘要"}
-  ],
-  "analysis": "多空觀點一句。短期展望一句。",
-  "relatedTopics": ["延伸話題1","延伸話題2","延伸話題3","延伸話題4"],
-  "relatedStocks": [
-    {"name":"公司名","code":"代號","price":"數字","change":"±N.N%"},
-    {"name":"公司名","code":"代號","price":"數字","change":"±N.N%"},
-    {"name":"公司名","code":"代號","price":"數字","change":"±N.N%"}
-  ],
-  "hasKgi": true
-}
-
-今天 ${today}。繁體中文。chips 數字單位為張,正=買超,負=賣超。bullets 每點 ≤15 字。eps.years 固定為近三年（含預估）。`;
-
-  const raw = await fetchGemini(buildGeminiBody(systemPrompt, `分析股票：${userQuery}`, 2048));
-  const parsed = extractJSON(raw);
-  return normalizeStockData(parsed, userQuery, curYear);
+  return normalizeStockData(findMockStock(userQuery), userQuery, curYear);
 }
 
 /* ── Robust JSON extractor ──
@@ -4772,31 +4664,28 @@ function closedReportModal() {
 
 /* ── Generic AI for market/non-stock queries ── */
 async function callGenericAI(userQuery) {
-  if (!getApiKey()) {
-    // Fallback to mock when no API key
-    await new Promise(r => setTimeout(r, 600));
-    const q = userQuery.toLowerCase();
-    const found = MOCK_GENERIC_DATA.find(d => d.keywords.some(k => q.includes(k)));
-    return found ? found.response : MOCK_GENERIC_DATA[0].response;
-  }
-
-  const today = new Date().toLocaleDateString('zh-TW');
-  const systemPrompt = `你是一位台股 AI 投資助理，專長是市場總覽與產業分析。使用 web_search 查詢今日最新市場資訊後，以繁體中文回覆。
-
-【重要】回覆必須根據當日真實市場數據，包含：大盤指數、成交量、法人買賣超、產業強弱、市場情緒等，不要只分析個股。
-
-回覆格式為純 JSON（不包 markdown）：
-{
-  "contentBlock": "HTML 格式回覆，需包含實際市場數據與數字，font-size:14px line-height:1.8 color:var(--text-main) font-family:'Noto Sans TC',sans-serif",
-  "relatedTopics": ["延伸話題1","延伸話題2","延伸話題3","延伸話題4"],
-  "relatedStocks": [{"name":"","code":"","price":"","change":""}],
-  "hasKgi": false
-}
-
-今天 ${today}。回覆需有具體數據（指數點位、漲跌幅、成交量等），避免空泛描述。`;
-
-  const raw = await fetchGemini(buildGeminiBody(systemPrompt, userQuery, 2000));
-  return extractJSON(raw);
+  await new Promise(r => setTimeout(r, 400));
+  const q = userQuery.toLowerCase();
+  const MARKET_STATIC = {
+    contentBlock: `<div style="font-size:14px;line-height:1.8;color:var(--text-main);font-family:'Noto Sans TC',sans-serif;">
+      <h3 style="margin-bottom:10px;font-size:15px;">📊 台股市場概況（2026-05-07 收盤）</h3>
+      <p><strong>加權指數</strong>：41,933 點 <span style="color:var(--up)">▲ +794（+1.93%）</span>，突破歷史新高，成交金額 1.25 兆元。</p>
+      <p><strong>櫃買指數</strong>：409.44 點 <span style="color:var(--dn)">▼ -6.97（-1.67%）</span>，上市強於上櫃，資金集中大型股。</p>
+      <p><strong>美元/台幣</strong>：31.35 元，台幣小幅升值 -0.26%。</p>
+      <p><strong>三大法人</strong>：外資買超 428 億元，投信買超 52 億元，自營商賣超 18 億元，合計淨買超逾 460 億元。</p>
+      <p><strong>產業強勢</strong>：半導體（台積電 +2.67%、聯發科 +6.54%）、AI伺服器（鴻海 +3.89%、緯穎 +7.02%）領漲；傳產（台泥 -1.35%）偏弱。</p>
+      <p><strong>市場情緒</strong>：AI算力需求持續爆發，市場樂觀情緒高漲，但 RSI 偏高，短線宜注意獲利了結賣壓。</p>
+    </div>`,
+    relatedTopics: ["外資法人動向", "台股技術面分析", "AI伺服器產業趨勢", "定期定額最佳時機"],
+    relatedStocks: [
+      { name: "台積電", code: "2330", price: "2310", change: "+2.67%" },
+      { name: "聯發科", code: "2454", price: "3420", change: "+6.54%" },
+      { name: "緯穎",   code: "6669", price: "4880", change: "+7.02%" },
+      { name: "元大台灣50", code: "0050", price: "97.70", change: "+1.17%" }
+    ],
+    hasKgi: false
+  };
+  return MARKET_STATIC;
 }
 
 function renderGenericResponse(parsed) {
@@ -4908,15 +4797,11 @@ function renderOffTopic() {
   scrollDown();
 }
 
-/* ── AI intent classifier: fast single call, no web_search ── */
+/* ── Intent classifier (static: always finance) ── */
 async function classifyIntent(text) {
-  try {
-    const ans = (await fetchGemini(buildGeminiBody('你是一個意圖分類器。判斷用戶的問題是否與「金融、投資、股票、ETF、市場、財報、總體經濟」相關。只回覆一個字：finance 或 other。', text, 10, false))).toLowerCase();
-    return ans.startsWith('other') ? 'other' : 'finance';
-  } catch(e) {
-    return 'finance'; // fallback: allow on error
-  }
+  return 'finance';
 }
+
 
 async function runAiQuery(text) {
   // ── Compare intent: detect immediately (no classification needed) ──
