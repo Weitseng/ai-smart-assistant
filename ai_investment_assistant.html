@@ -88,10 +88,11 @@
     .status-icons { display: flex; align-items: center; gap: 7px; }
 
     .nav-bar {
-      display: flex; align-items: center;
-      justify-content: space-between;
+      display: grid; grid-template-columns: 1fr auto 1fr;
+      align-items: center;
       padding: 6px 20px 12px;
     }
+    .nav-icons { justify-self: end; }
     .nav-back {
       background: none; border: none; cursor: pointer;
       color: var(--text-main); display: flex; align-items: center;
@@ -1167,7 +1168,9 @@
 
     /* Contextual question buttons */
     .mkt-questions {
-      padding: 0 16px 14px;
+      padding: 20px 16px 14px;
+      border-top: 1px solid var(--divider);
+      margin-top: 4px;
     }
     .mkt-q-label {
       font-size: 13px; color: var(--text-hint); font-weight: 600;
@@ -1235,6 +1238,15 @@
       font-size: 13px; color: var(--text-hint);
       font-family: 'Noto Sans TC', sans-serif;
     }
+
+    /* Details/summary disclosure */
+    details summary::-webkit-details-marker { display: none; }
+    details summary::marker { display: none; }
+    /* Deep-dive accordion */
+    .deep-dive-section[open] > summary { border-radius: 14px 14px 0 0; background: #eef2ff; }
+    .deep-dive-section[open] > summary .deep-chevron { transform: rotate(180deg); }
+    /* News expand: hide button after open */
+    details.news-more[open] > summary { display: none !important; }
 
     /* Collapsible body */
     .mkt-body {
@@ -1413,9 +1425,10 @@
             <span class="mkt-summary-icon">📡</span>
             <span class="mkt-summary-text" id="mktSummaryText">—</span>
           </div>
+          <div id="mktStocksHeader" style="padding:14px 16px 6px;"></div>
           <div class="mkt-stocks" id="mktStocks"></div>
           <div class="mkt-questions" id="mktQuestions">
-            <div class="mkt-q-label">AI 建議探索</div>
+            <div class="mkt-q-label" id="mktQLabel">結合您的自選股與今日行情，這些問題值得一探</div>
             <div class="mkt-q-grid" id="mktQGrid"></div>
           </div>
           <div class="mkt-refresh">
@@ -1797,6 +1810,23 @@ function renderMktStocks(stocks) {
   // Build a lookup set from WATCHLIST codes for O(1) check
   const wlCodes = new Set((WATCHLIST || []).map(w => w.code));
   const wlNames = new Set((WATCHLIST || []).map(w => w.name));
+
+  // 動態生成自選股標題
+  const headerEl = document.getElementById('mktStocksHeader');
+  if (headerEl) {
+    const wlStocks = stocks.filter(s => wlCodes.has(s.code) || wlNames.has(s.name));
+    const upCount = wlStocks.filter(s => s.dir === 'up').length;
+    const dnCount = wlStocks.filter(s => s.dir === 'dn').length;
+    const total = wlStocks.length;
+    const perfLine = upCount === total
+      ? `今日全線收紅，整體表現強勢`
+      : dnCount === total
+        ? `今日整體偏弱，建議留意風險`
+        : `今日 ${upCount} 漲 ${dnCount} 跌，表現分歧`;
+    headerEl.innerHTML = `
+      <div style="font-size:13px;color:var(--text-hint);font-weight:600;font-family:'Noto Sans TC',sans-serif;letter-spacing:0.04em;margin-bottom:3px;">您目前追蹤的 ${total} 檔自選股</div>
+      <div style="font-size:16px;font-weight:700;color:var(--text-main);font-family:'Noto Sans TC',sans-serif;">${perfLine}</div>`;
+  }
 
   el.innerHTML = stocks.map(s => {
     const isWL = wlCodes.has(s.code) || wlNames.has(s.name);
@@ -3337,8 +3367,8 @@ function buildStockChips(stocks, contextName) {
     ? `跟 ${escHtml(contextName)} 連動，這些個股值得同步追蹤`
     : `這些個股與它高度連動，值得同步追蹤`;
   return `
-    <div style="margin-top:16px;">
-      <div class="related-label" style="margin-bottom:10px;">${chipsLabel}</div>
+    <div style="margin-top:20px;">
+      <div style="font-size:13px;font-weight:600;color:#4b5563;letter-spacing:0.04em;margin-bottom:10px;font-family:'Noto Sans TC',sans-serif;">${chipsLabel}</div>
       <div style="display:flex;flex-direction:column;gap:8px;">
         ${stocks.map((s,i) => {
           const inWl = watchlist.has(`${s.name} ${s.code}`);
@@ -4075,8 +4105,8 @@ function renderStockResponse(parsed, userQuery) {
 
   // ② 個股評鑑數據列
   const evalHtml = `
-    <div style="background:#f7f8fb;border:1px solid var(--divider);border-radius:12px;padding:14px 16px;margin-bottom:16px;">
-      <div style="font-size: 13px;font-weight:600;color:var(--text-hint);letter-spacing:0.08em;margin-bottom:12px;font-family:'Noto Sans TC',sans-serif;">個股評鑑</div>
+    <div style="background:#f7f8fb;border:1px solid var(--divider);border-radius:12px;padding:14px 16px;margin-bottom:22px;">
+      <div style="font-size: 13px;font-weight:600;color:#4b5563;letter-spacing:0.04em;margin-bottom:12px;font-family:'Noto Sans TC',sans-serif;">個股評鑑</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
         ${[
           ['12M 目標價', `<b style="font-size: 20px;color:#2563eb;font-family:'DM Sans',sans-serif;">$${escHtml(parsed.targetPrice||'—')}</b>`],
@@ -4096,8 +4126,8 @@ function renderStockResponse(parsed, userQuery) {
   // ③ 核心投資邏輯
   const bullets = parsed.bullets || [];
   const bulletsHtml = bullets.length ? `
-    <div style="margin-bottom:16px;">
-      <div style="font-size: 13px;font-weight:600;color:var(--text-hint);letter-spacing:0.08em;margin-bottom:10px;font-family:'Noto Sans TC',sans-serif;">核心投資邏輯</div>
+    <div style="margin-bottom:22px;">
+      <div style="font-size: 13px;font-weight:600;color:#4b5563;letter-spacing:0.04em;margin-bottom:10px;font-family:'Noto Sans TC',sans-serif;">核心投資邏輯</div>
       <div style="display:flex;flex-direction:column;gap:7px;">
         ${bullets.map((b,i)=>`
           <div style="display:flex;gap:9px;align-items:center;background:#f7f8fb;border-radius:10px;padding:10px 12px;border:1px solid var(--divider);">
@@ -4110,8 +4140,8 @@ function renderStockResponse(parsed, userQuery) {
   // ④ 交易資料
   const t = parsed.trading || {};
   const tradingHtml = `
-    <div style="margin-bottom:16px;">
-      <div style="font-size: 13px;font-weight:600;color:var(--text-hint);letter-spacing:0.08em;margin-bottom:10px;font-family:'Noto Sans TC',sans-serif;">交易資料</div>
+    <div style="margin-bottom:22px;">
+      <div style="font-size: 13px;font-weight:600;color:#4b5563;letter-spacing:0.04em;margin-bottom:10px;font-family:'Noto Sans TC',sans-serif;">交易資料</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;">
         ${[
           ['市值', t.marketCap],['流通股數', t.shares],
@@ -4129,8 +4159,8 @@ function renderStockResponse(parsed, userQuery) {
   const perf = parsed.performance || [];
   const perfChartId = `perf-${msgCounter+1}`;
   const perfHtml = perf.length ? `
-    <div style="margin-bottom:16px;">
-      <div style="font-size: 13px;font-weight:600;color:var(--text-hint);letter-spacing:0.08em;margin-bottom:10px;font-family:'Noto Sans TC',sans-serif;">股價表現</div>
+    <div style="margin-bottom:22px;">
+      <div style="font-size: 13px;font-weight:600;color:#4b5563;letter-spacing:0.04em;margin-bottom:10px;font-family:'Noto Sans TC',sans-serif;">股價表現</div>
       <div style="background:#f7f8fb;border:1px solid var(--divider);border-radius:12px;padding:12px 14px;">
         ${perf.map(p => {
           const absVal = parseFloat((p.abs||'0').replace('%','').replace('+',''));
@@ -4169,8 +4199,8 @@ function renderStockResponse(parsed, userQuery) {
   const epsYears = allYears.slice(-3);
   const epsYearIdxs = epsYears.map(y => allYears.indexOf(y));
   const epsHtml = epsYears.length ? `
-    <div style="margin-bottom:16px;">
-      <div style="font-size: 13px;font-weight:600;color:var(--text-hint);letter-spacing:0.08em;margin-bottom:10px;font-family:'Noto Sans TC',sans-serif;">每股盈餘 (EPS) 預估</div>
+    <div style="margin-bottom:22px;">
+      <div style="font-size: 13px;font-weight:600;color:#4b5563;letter-spacing:0.04em;margin-bottom:10px;font-family:'Noto Sans TC',sans-serif;">每股盈餘 (EPS) 預估</div>
       <div style="overflow-x:auto;">
         <table style="width:100%;border-collapse:collapse;font-size: 14px;min-width:240px;">
           <thead>
@@ -4205,33 +4235,43 @@ function renderStockResponse(parsed, userQuery) {
   // ⑦ 互動財務圖表（近 3 年維度）
   const chartWrapperId = `ichart-${msgCounter+1}`;
   const chartHtml = allYears.length ? `
-    <div style="margin-bottom:16px;">
-      <div style="font-size: 13px;font-weight:600;color:var(--text-hint);letter-spacing:0.08em;margin-bottom:10px;font-family:'Noto Sans TC',sans-serif;">財務圖表（近三年）</div>
+    <div style="margin-bottom:22px;">
+      <div style="font-size: 13px;font-weight:600;color:#4b5563;letter-spacing:0.04em;margin-bottom:10px;font-family:'Noto Sans TC',sans-serif;">財務圖表（近三年）</div>
       ${buildInteractiveChart(chartWrapperId, parsed, epsYears)}
     </div>` : '';
 
-  // ⑧ 最新新聞
+  // ⑧ 最新新聞（只顯示第1則，其餘可展開）
   const news = parsed.news || [];
   const stockShortName = (parsed.ticker||'').split(' ')[0] || parsed.name || '這檔股票';
-  const newsHtml = news.length ? `
-    <div style="margin-bottom:16px;">
-      <div style="font-size: 13px;font-weight:600;color:var(--text-hint);letter-spacing:0.05em;margin-bottom:10px;font-family:'Noto Sans TC',sans-serif;">近期正在影響 ${escHtml(stockShortName)} 走勢的消息</div>
-      <div style="display:flex;flex-direction:column;gap:8px;">
-        ${news.map(n=>`
-          <div style="background:#ffffff;border:1px solid var(--divider);border-radius:12px;padding:12px 14px;">
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
-              <span style="font-size: 13px;background:#eef0f5;color:var(--text-sub);padding:2px 8px;border-radius:8px;font-family:'Noto Sans TC',sans-serif;">${escHtml(n.source||'')}</span>
-              <span style="font-size: 13px;color:var(--text-hint);font-family:'DM Sans',sans-serif;">${escHtml(n.date||'')}</span>
-            </div>
-            <div style="font-size: 15.5px;font-weight:600;color:var(--text-main);line-height:1.4;margin-bottom:4px;font-family:'Noto Sans TC',sans-serif;">${escHtml(n.title||'')}</div>
-            <div style="font-size: 14px;color:var(--text-sub);line-height:1.55;font-family:'Noto Sans TC',sans-serif;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${escHtml(n.summary||'')}</div>
-          </div>`).join('')}
+  function renderNewsItem(n) {
+    return `<div style="background:#ffffff;border:1px solid var(--divider);border-radius:12px;padding:12px 14px;">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+        <span style="font-size: 13px;background:#eef0f5;color:var(--text-sub);padding:2px 8px;border-radius:8px;font-family:'Noto Sans TC',sans-serif;">${escHtml(n.source||'')}</span>
+        <span style="font-size: 13px;color:var(--text-hint);font-family:'DM Sans',sans-serif;">${escHtml(n.date||'')}</span>
       </div>
+      <div style="font-size: 15.5px;font-weight:600;color:var(--text-main);line-height:1.4;margin-bottom:4px;font-family:'Noto Sans TC',sans-serif;">${escHtml(n.title||'')}</div>
+      <div style="font-size: 14px;color:var(--text-sub);line-height:1.55;font-family:'Noto Sans TC',sans-serif;">${escHtml(n.summary||'')}</div>
+    </div>`;
+  }
+  const newsHtml = news.length ? `
+    <div style="margin-bottom:22px;">
+      <div style="font-size: 13px;font-weight:600;color:#4b5563;letter-spacing:0.04em;margin-bottom:10px;font-family:'Noto Sans TC',sans-serif;">近期正在影響 ${escHtml(stockShortName)} 走勢的消息</div>
+      ${renderNewsItem(news[0])}
+      ${news.length > 1 ? `
+        <details class="news-more" style="margin-top:8px;">
+          <summary style="font-size:14px;color:#2563eb;font-weight:600;cursor:pointer;padding:9px 13px;background:#f0f4ff;border-radius:10px;list-style:none;font-family:'Noto Sans TC',sans-serif;display:flex;align-items:center;gap:5px;">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 5L7 9L11 5" stroke="#2563eb" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            還有 ${news.length - 1} 則相關消息
+          </summary>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
+            ${news.slice(1).map(renderNewsItem).join('')}
+          </div>
+        </details>` : ''}
     </div>` : '';
 
   // ⑨ 凱基投顧觀點
   const analysisHtml = parsed.analysis ? `
-    <div style="background:linear-gradient(135deg,#f0f4ff 0%,#eef6ff 100%);border:1.5px solid rgba(37,99,235,0.18);border-radius:13px;padding:14px 16px;margin-bottom:16px;">
+    <div style="background:linear-gradient(135deg,#f0f4ff 0%,#eef6ff 100%);border:1.5px solid rgba(37,99,235,0.18);border-radius:13px;padding:14px 16px;margin-bottom:22px;">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
         <div style="background:var(--navy);border-radius:7px;padding:3px 9px;display:inline-flex;align-items:center;gap:5px;">
           <span style="font-size:13px;color:#fff;font-weight:700;letter-spacing:0.04em;font-family:'Noto Sans TC',sans-serif;">凱基投顧觀點</span>
@@ -4427,8 +4467,8 @@ function renderStockResponse(parsed, userQuery) {
   // ── 三面向 Tab 組合 ──
   const analysisTabId = `atab-${msgCounter+1}`;
   const analysisHtmlTabbed = `
-    <div style="margin-bottom:16px;" id="${analysisTabId}">
-      <div style="font-size: 13px;font-weight:600;color:var(--text-hint);letter-spacing:0.08em;margin-bottom:10px;font-family:'Noto Sans TC',sans-serif;">深度分析</div>
+    <div style="margin-bottom:22px;" id="${analysisTabId}">
+      <div style="font-size: 13px;font-weight:600;color:#4b5563;letter-spacing:0.04em;margin-bottom:10px;font-family:'Noto Sans TC',sans-serif;">深度分析</div>
       <div style="background:#ffffff;border:1px solid var(--divider);border-radius:12px;overflow:hidden;">
         <!-- Tab bar -->
         <div style="display:flex;background:#f3f4f8;border-bottom:1px solid var(--divider);padding:4px;gap:2px;">
@@ -4456,8 +4496,8 @@ function renderStockResponse(parsed, userQuery) {
   const ticker = escAttr(parsed.ticker || userQuery);
   const targetPrice = escHtml(parsed.targetPrice || '—');
   const actionsHtml = `
-    <div style="margin-bottom:16px;">
-      <div style="font-size: 13px;font-weight:600;color:var(--text-hint);letter-spacing:0.08em;margin-bottom:10px;font-family:'Noto Sans TC',sans-serif;">依據凱基投顧建議，您可以</div>
+    <div style="margin-bottom:22px;">
+      <div style="font-size: 13px;font-weight:600;color:#4b5563;letter-spacing:0.04em;margin-bottom:10px;font-family:'Noto Sans TC',sans-serif;">依據凱基投顧建議，您可以</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
         <button class="action-btn action-btn--kgi" onclick="openActionModal('report','${ticker}')">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="1.5" width="12" height="13" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M5 5.5H11M5 8H11M5 10.5H8.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
@@ -4481,10 +4521,45 @@ function renderStockResponse(parsed, userQuery) {
   // ⑭ 相關個股
   const stocksHtml = parsed.relatedStocks ? buildStockChips(parsed.relatedStocks, stockShortName) : '';
 
+  // 深入分析：技術面/籌碼面/基本面 + 交易資料 + 績效 + EPS + 圖表 → 折疊收起
+  const deepDiveHtml = `
+    <details class="deep-dive-section" style="margin-bottom:22px;">
+      <summary style="display:flex;align-items:center;justify-content:space-between;
+        cursor:pointer;padding:14px 16px;
+        background:linear-gradient(135deg,#f0f4ff 0%,#f7f9ff 100%);
+        border-radius:14px;
+        list-style:none;-webkit-user-select:none;user-select:none;
+        transition:background 0.15s;">
+        <div style="display:flex;align-items:center;gap:13px;">
+          <div style="width:40px;height:40px;border-radius:11px;background:#fff;border:1px solid rgba(37,99,235,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 1px 4px rgba(27,45,91,0.07);">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <rect x="2" y="11" width="3" height="7" rx="1" fill="#2563eb" opacity="0.7"/>
+              <rect x="7" y="7" width="3" height="11" rx="1" fill="#2563eb"/>
+              <rect x="12" y="4" width="3" height="14" rx="1" fill="#2563eb" opacity="0.5"/>
+              <path d="M17 3L17 17" stroke="none"/>
+            </svg>
+          </div>
+          <div>
+            <div style="font-size:15px;font-weight:700;color:var(--navy);font-family:'Noto Sans TC',sans-serif;margin-bottom:3px;">深入分析</div>
+            <div style="font-size:13px;color:#4b5563;font-family:'Noto Sans TC',sans-serif;line-height:1.5;">技術面・籌碼・基本面・EPS・近期績效</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+          <span style="font-size:13px;color:#2563eb;font-weight:600;font-family:'Noto Sans TC',sans-serif;">展開</span>
+          <svg class="deep-chevron" width="20" height="20" viewBox="0 0 20 20" fill="none" style="transition:transform 0.22s ease;">
+            <path d="M5 8L10 13L15 8" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </summary>
+      <div style="padding-top:20px;">
+        ${analysisHtmlTabbed + tradingHtml + perfHtml + epsHtml + chartHtml}
+      </div>
+    </details>`;
+
   const contentHtml = headerHtml + evalHtml + bulletsHtml
-    + analysisHtmlTabbed
-    + tradingHtml + perfHtml + epsHtml + chartHtml
-    + newsHtml + analysisHtml + actionsHtml + stocksHtml;
+    + analysisHtml + actionsHtml
+    + deepDiveHtml
+    + newsHtml + stocksHtml;
 
   const area = document.getElementById('chatArea');
   const block = document.createElement('div');
