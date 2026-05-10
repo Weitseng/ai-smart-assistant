@@ -32,6 +32,7 @@
       background: #c8ccd6;
       font-family: 'Noto Sans TC', -apple-system, sans-serif;
       -webkit-font-smoothing: antialiased;
+      overflow-x: hidden; /* prevent horizontal overflow on iOS Safari */
     }
 
     /* ── Phone shell — NO border-radius ── */
@@ -41,10 +42,12 @@
       align-items: flex-start;
       min-height: 100dvh;
       padding: 0;
+      overflow-x: hidden;
     }
 
     .phone {
-      width: min(390px, 100vw);
+      width: 100%;           /* fill available width, never exceeds viewport */
+      max-width: 430px;      /* cap at design width on wider screens */
       /* svh = small viewport height，永遠扣掉 Safari 網址列與 tab bar，鍵盤彈起時自動縮短 */
       height: 100svh;
       background: var(--bg-page);
@@ -58,7 +61,7 @@
 
     /* 真實手機裝置：隱藏 app 內模擬的假 status bar，避免與瀏覽器 UI 重疊 */
     @media (max-width: 430px) {
-      .status-bar { display: none; }
+      .status-bar { display: none !important; }
     }
 
     @media (min-width: 431px) {
@@ -125,7 +128,7 @@
       align-items: center;
       padding: 6px 20px 12px;
     }
-    .nav-icons { justify-self: end; }
+    .nav-icons { justify-self: end; flex-shrink: 0; }
     .nav-back {
       background: none; border: none; cursor: pointer;
       color: var(--text-main); display: flex; align-items: center;
@@ -135,7 +138,11 @@
       font-size: 20px; font-weight: 500;
       color: var(--text-main); letter-spacing: 0.01em;
     }
-    .nav-icons { display: flex; align-items: center; gap: 18px; }
+    .nav-icons { display: flex; align-items: center; gap: 16px; }
+    @media (max-width: 430px) {
+      .nav-icons { gap: 10px; }
+      .nav-bar { padding: 6px 16px 12px; }
+    }
     .nav-icon {
       background: none; border: none; cursor: pointer;
       color: var(--text-main); display: flex; align-items: center; opacity: 0.82;
@@ -712,7 +719,7 @@
       padding: 0 16px;
     }
     .input-suggest.open {
-      max-height: 110px; opacity: 1; padding: 10px 16px 0;
+      max-height: 200px; opacity: 1; padding: 10px 16px 0;
     }
     .input-suggest-inner {
       display: flex; flex-wrap: wrap; gap: 6px; padding-bottom: 8px;
@@ -5230,7 +5237,6 @@ function appendAnimated(area, block) {
     '鴻海有什麼近期利多？',
     '0050 適合現在買進嗎？',
     '台積電 vs 聯發科哪個更值得持有？',
-    '我的自選股今日誰漲最多？',
   ];
 
   inner.innerHTML = suggestions.map(s =>
