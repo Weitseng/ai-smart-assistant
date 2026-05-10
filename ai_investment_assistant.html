@@ -45,8 +45,8 @@
 
     .phone {
       width: min(390px, 100vw);
-      /* dvh 隨鍵盤動態縮短，確保輸入框始終可見 */
-      height: 100dvh;
+      /* svh = small viewport height，永遠扣掉 Safari 網址列與 tab bar，鍵盤彈起時自動縮短 */
+      height: 100svh;
       background: var(--bg-page);
       border-radius: 0;
       display: flex;
@@ -56,14 +56,19 @@
       position: relative;
     }
 
-    @media (min-width: 391px) {
+    /* 真實手機裝置：隱藏 app 內模擬的假 status bar，避免與瀏覽器 UI 重疊 */
+    @media (max-width: 430px) {
+      .status-bar { display: none; }
+    }
+
+    @media (min-width: 431px) {
       .outer {
         padding: 24px 0 40px;
         align-items: flex-start;
         background: #c8ccd6;
       }
       .phone {
-        height: min(844px, calc(100dvh - 64px));
+        height: min(844px, calc(100svh - 64px));
       }
     }
 
@@ -75,6 +80,12 @@
       background: #ffffff;
       border-bottom: 1px solid var(--divider);
       z-index: 10;
+      /* 真實手機上 status-bar 被隱藏，改由 safe-area-inset-top 補回頂部空間 */
+      padding-top: env(safe-area-inset-top, 0px);
+    }
+    /* 桌面 / 設計稿模式：status-bar 顯示時取消 header 的 safe-area padding */
+    @media (min-width: 431px) {
+      .fixed-header { padding-top: 0; }
     }
 
     .status-bar {
