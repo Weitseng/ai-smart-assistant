@@ -708,7 +708,7 @@
       outline: none; caret-color: var(--blue-btn);
       min-width: 0;
     }
-    .input-field::placeholder { color: var(--text-hint); }
+    .input-field::placeholder { color: var(--text-hint); text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
     .mic-btn {
       background: none; border: none; cursor: pointer; padding: 0;
       color: var(--text-hint); display: flex; align-items: center; flex-shrink: 0;
@@ -5237,6 +5237,27 @@ function fillInput(text) {
 })();
 
 /* ── 輸入框 placeholder 輪播：根據自選股提示可能的問題 ── */
+/* ── 根據輸入框實際可用寬度截斷 placeholder，超出以「...」呈現 ── */
+function fitPlaceholder(inp, text) {
+  const availW = inp.clientWidth;
+  if(availW <= 0) return text;
+  // 以 canvas 量測實際像素寬度
+  if(!fitPlaceholder._canvas) fitPlaceholder._canvas = document.createElement('canvas');
+  const ctx = fitPlaceholder._canvas.getContext('2d');
+  const cs = window.getComputedStyle(inp);
+  ctx.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+  if(ctx.measureText(text).width <= availW) return text;
+  // 二分搜尋最大可放字元數
+  const ellipsis = '...';
+  const ellW = ctx.measureText(ellipsis).width;
+  let lo = 0, hi = text.length;
+  while(lo < hi) {
+    const mid = Math.ceil((lo + hi) / 2);
+    ctx.measureText(text.slice(0, mid)).width + ellW <= availW ? lo = mid : hi = mid - 1;
+  }
+  return text.slice(0, lo) + ellipsis;
+}
+
 (function initPlaceholderRotation() {
   const inp = document.getElementById('userInput');
   if(!inp) return;
@@ -5250,17 +5271,28 @@ function fillInput(text) {
     '試試：聯發科和台積電哪個更值得持有？',
   ];
   let idx = 0;
+
+  function setPlaceholder(text) {
+    inp.placeholder = fitPlaceholder(inp, text);
+  }
+
+  // 初始設定
+  setPlaceholder(hints[0]);
+
   function rotatePlaceholder() {
-    if(document.activeElement === inp || inp.value) return; // 使用中不輪播
+    if(document.activeElement === inp || inp.value) return;
     inp.style.transition = 'opacity 0.3s ease';
     inp.style.opacity = '0';
     setTimeout(() => {
       idx = (idx + 1) % hints.length;
-      inp.placeholder = hints[idx];
+      setPlaceholder(hints[idx]);
       inp.style.opacity = '1';
     }, 300);
   }
   setInterval(rotatePlaceholder, 4000);
+
+  // 視窗大小改變時重新計算當前 placeholder
+  window.addEventListener('resize', () => setPlaceholder(hints[idx]));
 })();
 
 /* ══════════════════════════════════════════
