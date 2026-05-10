@@ -660,6 +660,36 @@
     }
     .modal-confirm:hover { opacity: 0.88; }
 
+    /* ── 輸入聚焦快速提示 ── */
+    .input-suggest {
+      overflow: hidden; max-height: 0; opacity: 0;
+      transition: max-height 0.25s ease, opacity 0.18s ease, padding 0.25s ease;
+      padding: 0 16px;
+    }
+    .input-suggest.open {
+      max-height: 110px; opacity: 1; padding: 10px 16px 0;
+    }
+    .input-suggest-inner {
+      display: flex; flex-wrap: wrap; gap: 6px; padding-bottom: 8px;
+      border-bottom: 1px solid var(--divider);
+    }
+    .input-suggest-chip {
+      font-size: 13px; padding: 5px 12px; border-radius: 20px;
+      background: #f0f4ff; color: #2563eb;
+      border: 1px solid rgba(37,99,235,0.15);
+      cursor: pointer; font-family: 'Noto Sans TC', sans-serif;
+      white-space: nowrap; transition: background 0.15s ease;
+    }
+    .input-suggest-chip:hover { background: #dbeafe; }
+    /* ── 意圖偵測徽章 ── */
+    .intent-badge {
+      font-size: 11.5px; color: #2563eb; background: #eef2ff;
+      border-radius: 6px; padding: 2px 7px; flex-shrink: 0;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.2s ease;
+      white-space: nowrap; font-family: 'Noto Sans TC', sans-serif;
+    }
+    .intent-badge.visible { opacity: 1; }
     .input-row {
       display: flex; align-items: center;
       gap: 10px; padding: 10px 16px 30px;
@@ -667,7 +697,7 @@
     .input-wrap {
       flex: 1; display: flex; align-items: center;
       background: var(--bg-input); border-radius: 24px;
-      padding: 12px 16px; gap: 10px;
+      padding: 12px 16px; gap: 8px;
       transition: background 0.15s;
     }
     .input-wrap:focus-within { background: #eaecf4; }
@@ -676,6 +706,7 @@
       font-size: 17px; color: var(--text-main);
       font-family: 'Noto Sans TC', sans-serif;
       outline: none; caret-color: var(--blue-btn);
+      min-width: 0;
     }
     .input-field::placeholder { color: var(--text-hint); }
     .mic-btn {
@@ -737,21 +768,25 @@
       transition: width 2s ease;
     }
     .thinking-steps {
-      display: flex; flex-wrap: wrap; gap: 5px;
+      display: flex; flex-direction: column; gap: 6px; margin-top: 2px;
     }
     .thinking-step {
-      font-size: 13px; padding: 2px 8px; border-radius: 10px;
-      font-family: 'Noto Sans TC', sans-serif;
-      background: rgba(37,99,235,0.08); color: rgba(37,99,235,0.4);
-      transition: all 0.3s ease; white-space: nowrap;
+      font-size: 13px; font-family: 'Noto Sans TC', sans-serif;
+      color: rgba(37,99,235,0.3);
+      display: flex; align-items: center; gap: 7px;
+      transition: color 0.25s ease;
     }
-    .thinking-step.active {
-      background: rgba(37,99,235,0.15); color: #2563eb; font-weight: 600;
+    .thinking-step-dot {
+      width: 5px; height: 5px; flex-shrink: 0;
+      border-radius: 50%; background: rgba(37,99,235,0.18);
+      transition: all 0.2s ease;
     }
-    .thinking-step.done {
-      background: rgba(37,99,235,0.06); color: rgba(37,99,235,0.3);
-      text-decoration: line-through;
-    }
+    .thinking-step-check { display: none; font-size: 11px; color: #22c55e; flex-shrink: 0; }
+    .thinking-step.active { color: #2563eb; font-weight: 600; }
+    .thinking-step.active .thinking-step-dot { background: #2563eb; transform: scale(1.4); }
+    .thinking-step.done { color: rgba(37,99,235,0.38); }
+    .thinking-step.done .thinking-step-dot { display: none; }
+    .thinking-step.done .thinking-step-check { display: inline; }
     .stock-row-card {
       display: flex; align-items: center; justify-content: space-between;
       background: #ffffff; border: 1px solid var(--divider);
@@ -1454,13 +1489,17 @@
         <div class="chip-divider"></div>
         <button class="chip-add" onclick="openAddChip()" title="新增自訂提示">＋</button>
       </div>
+      <div id="inputSuggest" class="input-suggest">
+        <div class="input-suggest-inner" id="inputSuggestInner"></div>
+      </div>
       <div class="input-row">
         <div class="input-wrap">
           <input
             class="input-field" id="userInput"
-            placeholder="投資問題,隨便問！"
+            placeholder="試試：台積電現在值得加碼嗎？"
             autocomplete="off" autocorrect="off" spellcheck="false"
           />
+          <span class="intent-badge" id="intentBadge"></span>
           <button class="mic-btn" title="語音輸入">
             <svg width="17" height="22" viewBox="0 0 17 22" fill="none">
               <rect x="4.5" y="1" width="8" height="12" rx="4" stroke="currentColor" stroke-width="1.6"/>
@@ -2716,7 +2755,7 @@ async function confirmCompareSearch() {
   showTyping(true);
   try {
     const parsed = await callStockAI(val);
-    hideTyping();
+    await hideTyping();
     // Add to compare list
     const key = parsed.ticker || val;
     compareList.set(key, parsed);
@@ -2729,7 +2768,7 @@ async function confirmCompareSearch() {
       renderComparePanel();
     }
   } catch(err) {
-    hideTyping();
+    await hideTyping();
     console.error(err);
     showToast('取得資料失敗,請再試一次');
   }
@@ -2933,84 +2972,93 @@ function addUserMsg(text) {
 }
 
 /* ── Thinking indicator — multi-step animated ── */
-const THINKING_STEPS = [
-  '搜尋即時報價中…',
-  'AI 彙整分析中…',
+const THINKING_STEPS_STOCK = [
+  { label: '取得個股即時報價與交易資料', duration: 480 },
+  { label: '彙整三大法人籌碼動向', duration: 420 },
+  { label: '凱基投顧觀點與評等比對', duration: 480 },
+  { label: '整合近期新聞與財務數據', duration: 370 },
 ];
+const THINKING_STEPS_GENERIC = [
+  { label: '掃描今日大盤指數與成交量', duration: 430 },
+  { label: '分析市場整體籌碼方向', duration: 470 },
+];
+const MIN_THINKING_MS = 1750; // 最短展示時間，避免一閃即過
 
 let _thinkingTimer = null;
+let _thinkingStart = 0;
 
 function showTyping(isStock) {
+  _thinkingStart = Date.now();
   const area = document.getElementById('chatArea');
   const row = document.createElement('div');
   row.className = 'ai-block'; row.id = 'typingRow';
 
-  if(isStock) {
-    row.innerHTML = `
-      <div class="thinking-card" id="thinkingCard">
-        <div class="thinking-icon">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <circle cx="8" cy="8" r="7" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="3 2" class="thinking-spin"/>
-            <circle cx="8" cy="8" r="3" fill="#2563eb" opacity="0.5"/>
-          </svg>
-        </div>
-        <div class="thinking-right">
-          <div class="thinking-label" id="thinkingLabel">${THINKING_STEPS[0]}</div>
-          <div class="thinking-bar"><div class="thinking-fill" id="thinkingFill"></div></div>
-          <div class="thinking-steps">
-            ${THINKING_STEPS.map((s,i)=>`
-              <span class="thinking-step" id="tstep-${i}">${s.replace('…','')}</span>
-            `).join('')}
-          </div>
-        </div>
-      </div>`;
-    area.appendChild(row);
-    scrollDown();
+  const steps = isStock ? THINKING_STEPS_STOCK : THINKING_STEPS_GENERIC;
 
-    // Animate through steps
-    let step = 0;
-    const totalSteps = THINKING_STEPS.length;
-    const stepDuration = 1500; // ms per step
+  row.innerHTML = `
+    <div class="thinking-card" id="thinkingCard">
+      <div class="thinking-icon">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <circle cx="9" cy="9" r="8" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="4 2.5" class="thinking-spin"/>
+          <circle cx="9" cy="9" r="3.5" fill="#2563eb" opacity="0.45"/>
+        </svg>
+      </div>
+      <div class="thinking-right">
+        <div class="thinking-label" id="thinkingLabel">${steps[0].label}</div>
+        <div class="thinking-bar"><div class="thinking-fill" id="thinkingFill" style="width:${Math.round(72/steps.length)}%;"></div></div>
+        <div class="thinking-steps">
+          ${steps.map((s,i)=>`
+            <div class="thinking-step${i===0?' active':''}" id="tstep-${i}">
+              <span class="thinking-step-dot"></span>
+              <span class="thinking-step-check">✓</span>
+              <span>${escHtml(s.label)}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>`;
+  area.appendChild(row);
+  scrollDown();
 
-    function advance() {
-      step++;
-      if(step >= totalSteps) step = totalSteps - 1;
-      const label = document.getElementById('thinkingLabel');
-      const fill  = document.getElementById('thinkingFill');
-      if(label) label.textContent = THINKING_STEPS[step];
-      if(fill)  fill.style.width = `${Math.min(((step+1)/totalSteps)*88, 88)}%`;
-      // mark previous steps done
-      for(let i=0; i<step; i++) {
-        const el = document.getElementById(`tstep-${i}`);
-        if(el) el.classList.add('done');
-      }
-      const cur = document.getElementById(`tstep-${step}`);
-      if(cur) cur.classList.add('active');
+  let step = 0;
+  const totalSteps = steps.length;
+
+  function advanceStep() {
+    if(step >= totalSteps - 1) return;
+    const cur = document.getElementById(`tstep-${step}`);
+    if(cur) { cur.classList.remove('active'); cur.classList.add('done'); }
+    step++;
+    const next = document.getElementById(`tstep-${step}`);
+    if(next) next.classList.add('active');
+    const label = document.getElementById('thinkingLabel');
+    if(label) label.textContent = steps[step].label;
+    const fill = document.getElementById('thinkingFill');
+    if(fill) fill.style.width = `${Math.round((step+1)/totalSteps*84)}%`;
+    if(step < totalSteps - 1) {
+      _thinkingTimer = setTimeout(advanceStep, steps[step].duration);
+    } else {
+      setTimeout(() => { const f=document.getElementById('thinkingFill'); if(f) f.style.width='92%'; }, 80);
     }
-
-    // Mark first step active
-    const s0 = document.getElementById('tstep-0');
-    if(s0) s0.classList.add('active');
-    const fill0 = document.getElementById('thinkingFill');
-    if(fill0) fill0.style.width = `${(1/totalSteps)*88}%`;
-
-    _thinkingTimer = setInterval(advance, stepDuration);
-  } else {
-    row.innerHTML = `
-      <div class="typing-row">
-        <div class="typing-dots">
-          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-        </div>
-      </div>`;
-    area.appendChild(row);
-    scrollDown();
   }
+
+  _thinkingTimer = setTimeout(advanceStep, steps[0].duration);
 }
 
 function hideTyping() {
-  if(_thinkingTimer) { clearInterval(_thinkingTimer); _thinkingTimer = null; }
-  const t = document.getElementById('typingRow');
-  if(t) t.remove();
+  const elapsed = Date.now() - _thinkingStart;
+  const remaining = Math.max(0, MIN_THINKING_MS - elapsed);
+  return new Promise(resolve => {
+    setTimeout(() => {
+      if(_thinkingTimer) { clearTimeout(_thinkingTimer); _thinkingTimer = null; }
+      const fill = document.getElementById('thinkingFill');
+      if(fill) { fill.style.transition = 'width 0.28s ease'; fill.style.width = '100%'; }
+      setTimeout(() => {
+        const t = document.getElementById('typingRow');
+        if(t) t.remove();
+        resolve();
+      }, 300);
+    }, remaining);
+  });
 }
 
 /* Build an AI block: no label, no bubble, icon-only feedback, source row, related topics */
@@ -3303,15 +3351,12 @@ async function sendChip(text) {
   if(staticContent && GENERIC_KEYWORDS.test(text.trim())) {
     addUserMsg(text);
     showTyping(false);
-    setTimeout(() => {
-      hideTyping();
-      const area = document.getElementById('chatArea');
-      const block = document.createElement('div');
-      block.className = 'ai-block';
-      block.innerHTML = buildAiBlock(staticContent.html, staticContent.topics, staticContent.sources);
-      area.appendChild(block);
-      scrollDown();
-    }, 600);
+    await hideTyping();
+    const area = document.getElementById('chatArea');
+    const block = document.createElement('div');
+    block.className = 'ai-block';
+    block.innerHTML = buildAiBlock(staticContent.html, staticContent.topics, staticContent.sources);
+    appendAnimated(area, block);
   } else {
     // Route through runAiQuery — catches compare intent & stock queries
     addUserMsg(text);
@@ -4569,8 +4614,7 @@ function renderStockResponse(parsed, userQuery) {
     parsed.relatedTopics || ['技術面分析', '法人動向', '同業比較', '相關新聞'],
     sources
   );
-  area.appendChild(block);
-  scrollDown();
+  appendAnimated(area, block);
 
 }
 
@@ -4782,26 +4826,22 @@ function renderGenericResponse(parsed) {
   const block = document.createElement('div');
   block.className = 'ai-block';
   block.innerHTML = buildAiBlock(contentHtml, parsed.relatedTopics||[], sources);
-  area.appendChild(block);
-  scrollDown();
+  appendAnimated(area, block);
 }
 
 
 /* Detect if query is about a specific stock */
-function triggerTool(type) {
+async function triggerTool(type) {
   const labels = { summary:'📊 盤後懶人包', anomaly:'🔍 自選股分析', calendar:'📅 自選股大事件' };
   const tool = TOOL_CONTENT[type];
   addUserMsg(labels[type]);
   showTyping(false);
-  setTimeout(() => {
-    hideTyping();
-    const area = document.getElementById('chatArea');
-    const block = document.createElement('div');
-    block.className = 'ai-block';
-    block.innerHTML = buildAiBlock(tool.html, tool.topics, tool.sources);
-    area.appendChild(block);
-    scrollDown();
-  }, 900);
+  await hideTyping();
+  const area = document.getElementById('chatArea');
+  const block = document.createElement('div');
+  block.className = 'ai-block';
+  block.innerHTML = buildAiBlock(tool.html, tool.topics, tool.sources);
+  appendAnimated(area, block);
 }
 
 async function sendMessage() {
@@ -4908,15 +4948,15 @@ async function runAiQuery(text) {
   try {
     if(stock) {
       const parsed = await callStockAI(text);
-      hideTyping();
+      await hideTyping();
       renderStockResponse(parsed, text);
     } else {
       const parsed = await callGenericAI(text);
-      hideTyping();
+      await hideTyping();
       renderGenericResponse(parsed);
     }
   } catch(err) {
-    hideTyping();
+    await hideTyping();
     console.error(err);
     const area = document.getElementById('chatArea');
     const block = document.createElement('div');
@@ -5107,6 +5147,121 @@ function switchAnalysisTab(containerId, panel, btn) {
 document.getElementById('userInput').addEventListener('keydown', e => {
   if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); }
 });
+
+/* ── appendAnimated：結果淡入進場動畫 ── */
+function appendAnimated(area, block) {
+  block.style.opacity = '0';
+  block.style.transform = 'translateY(8px)';
+  block.style.transition = 'opacity 0.32s ease, transform 0.32s ease';
+  area.appendChild(block);
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    block.style.opacity = '1';
+    block.style.transform = 'translateY(0)';
+  }));
+  scrollDown();
+}
+
+/* ── 輸入框聚焦快速提示 ── */
+(function initInputSuggest() {
+  const inp = document.getElementById('userInput');
+  const panel = document.getElementById('inputSuggest');
+  const inner = document.getElementById('inputSuggestInner');
+  if(!inp || !panel || !inner) return;
+
+  const suggestions = [
+    '台積電現在值得加碼嗎？',
+    '聯發科最近法人動向如何？',
+    '鴻海有什麼近期利多？',
+    '0050 適合現在買進嗎？',
+    '台積電 vs 聯發科哪個更值得持有？',
+    '我的自選股今日誰漲最多？',
+  ];
+
+  inner.innerHTML = suggestions.map(s =>
+    `<button class="input-suggest-chip" onclick="fillInput('${s.replace(/'/g,"\\'")}')">
+       ${escHtml ? escHtml(s) : s}
+     </button>`
+  ).join('');
+
+  let blurTimer = null;
+  inp.addEventListener('focus', () => {
+    clearTimeout(blurTimer);
+    if(!inp.value) panel.classList.add('open');
+  });
+  inp.addEventListener('blur', () => {
+    blurTimer = setTimeout(() => panel.classList.remove('open'), 200);
+  });
+  inp.addEventListener('input', () => {
+    // 有輸入內容時收起建議
+    if(inp.value) panel.classList.remove('open');
+    else if(document.activeElement === inp) panel.classList.add('open');
+  });
+})();
+
+function fillInput(text) {
+  const inp = document.getElementById('userInput');
+  if(inp) { inp.value = text; inp.focus(); }
+  document.getElementById('inputSuggest')?.classList.remove('open');
+}
+
+/* ── 即時意圖偵測徽章 ── */
+(function initIntentDetector() {
+  const inp = document.getElementById('userInput');
+  const badge = document.getElementById('intentBadge');
+  if(!inp || !badge) return;
+
+  const INTENT_LABELS = {
+    stock: '個股分析',
+    compare: '股票比較',
+    market: '大盤查詢',
+  };
+
+  function detectIntent(val) {
+    if(!val || val.length < 3) return null;
+    if(/比較|vs|VS|對比|哪個好|哪支/.test(val)) return 'compare';
+    if(typeof isStockQuery === 'function' && isStockQuery(val)) return 'stock';
+    return 'market';
+  }
+
+  inp.addEventListener('input', () => {
+    const intent = detectIntent(inp.value.trim());
+    if(intent) {
+      badge.textContent = INTENT_LABELS[intent];
+      badge.classList.add('visible');
+    } else {
+      badge.classList.remove('visible');
+    }
+  });
+
+  inp.addEventListener('blur', () => badge.classList.remove('visible'));
+})();
+
+/* ── 輸入框 placeholder 輪播：根據自選股提示可能的問題 ── */
+(function initPlaceholderRotation() {
+  const inp = document.getElementById('userInput');
+  if(!inp) return;
+  const hints = [
+    '試試：台積電現在值得加碼嗎？',
+    '試試：聯發科的法人籌碼如何？',
+    '試試：鴻海近期有什麼利多消息？',
+    '試試：0050 現在適合買進嗎？',
+    '試試：我的自選股今日誰表現最好？',
+    '試試：台積電下季 EPS 預估多少？',
+    '試試：聯發科和台積電哪個更值得持有？',
+  ];
+  let idx = 0;
+  function rotatePlaceholder() {
+    if(document.activeElement === inp || inp.value) return; // 使用中不輪播
+    inp.style.transition = 'opacity 0.3s ease';
+    inp.style.opacity = '0';
+    setTimeout(() => {
+      idx = (idx + 1) % hints.length;
+      inp.placeholder = hints[idx];
+      inp.style.opacity = '1';
+    }, 300);
+  }
+  setInterval(rotatePlaceholder, 4000);
+})();
 
 /* ══════════════════════════════════════════
    CUSTOM PROMPT MODAL
