@@ -72,6 +72,26 @@
       }
     }
 
+    /* ── 橫向模式（手機旋轉）：縮減上下間距，確保輸入框可見 ── */
+    @media (max-height: 500px) and (orientation: landscape) {
+      .hero { padding: 12px 20px 10px; }
+      .hero-title { font-size: 20px; margin-bottom: 6px; }
+      .hero-desc { font-size: 14px; }
+      .chips-row { padding: 8px 16px 0; }
+      .input-row { padding: 8px 12px 10px; }
+      .mkt-module { display: none; } /* 橫向空間不足，收起市場資訊 */
+    }
+
+    /* ── 平板（768px+）：置中寬限 ── */
+    @media (min-width: 768px) {
+      .outer { align-items: center; min-height: 100dvh; }
+      .phone {
+        border-radius: 16px;
+        height: min(844px, calc(100svh - 80px));
+        box-shadow: 0 16px 80px rgba(0,0,0,0.28);
+      }
+    }
+
     /* ═══════════════════════════════════
        FIXED HEADER
     ═══════════════════════════════════ */
@@ -120,8 +140,10 @@
       background: none; border: none; cursor: pointer;
       color: var(--text-main); display: flex; align-items: center; opacity: 0.82;
       transition: opacity 0.15s;
+      border-radius: 8px; padding: 4px;
     }
     .nav-icon:hover { opacity: 1; }
+    .nav-icon:focus-visible { opacity: 1; outline: 2px solid #2563eb; outline-offset: 2px; }
 
     /* Compare mode toggle badge — always visible */
     .compare-badge {
@@ -489,6 +511,7 @@
       background: rgba(27,45,91,0.06);
       border-color: rgba(27,45,91,0.3); color: var(--text-main);
     }
+    .related-chip:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
 
 
     /* Typing indicator */
@@ -573,6 +596,7 @@
     }
     .chip:hover { background: #dde0ea; }
     .chip:active { background: #d2d5e0; }
+    .chip:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
 
     /* ＋ add chip button */
     .chip-tool {
@@ -587,6 +611,7 @@
     }
     .chip-tool:hover { opacity: 0.85; }
     .chip-tool:active { opacity: 0.7; }
+    .chip-tool:focus-visible { outline: 2px solid #93c5fd; outline-offset: 2px; }
 
     .chip-divider {
       flex-shrink: 0;
@@ -614,6 +639,7 @@
       background: var(--bg-pill);
     }
     .chip-add:active { background: #dde0ea; }
+    .chip-add:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
 
     /* Custom prompt modal overlay */
     .modal-overlay {
@@ -731,11 +757,12 @@
     }
     .input-field::placeholder { color: var(--text-hint); text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
     .mic-btn {
-      background: none; border: none; cursor: pointer; padding: 0;
+      background: none; border: none; cursor: pointer; padding: 4px;
       color: var(--text-hint); display: flex; align-items: center; flex-shrink: 0;
-      transition: color 0.15s;
+      transition: color 0.15s; border-radius: 6px;
     }
     .mic-btn:hover { color: var(--text-sub); }
+    .mic-btn:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; color: var(--text-sub); }
     .send-btn {
       width: 48px; height: 48px; background: var(--blue-btn);
       border: none; border-radius: 50%;
@@ -746,6 +773,7 @@
     }
     .send-btn:hover { opacity: 0.88; }
     .send-btn:active { transform: scale(0.94); }
+    .send-btn:focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; }
 
     .scroll-fade {
       position: sticky; bottom: 0; left: 0; right: 0;
@@ -1155,6 +1183,7 @@
       background: #eef2ff; border-color: rgba(37,99,235,0.15);
     }
     .mkt-stock-card:active { transform: scale(0.97); }
+    .mkt-stock-card:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; background: #eef2ff; }
     .mkt-stock-top {
       display: flex; justify-content: space-between;
       align-items: flex-start; margin-bottom: 5px;
@@ -1248,6 +1277,7 @@
       background: #f0f4ff; border-color: rgba(37,99,235,0.25);
     }
     .mkt-q-btn:active { transform: scale(0.98); }
+    .mkt-q-btn:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; background: #f0f4ff; }
     .mkt-q-icon {
       width: 28px; height: 28px; border-radius: 8px;
       display: flex; align-items: center; justify-content: center;
@@ -1354,7 +1384,8 @@
     .apikey-modal-overlay.open { display: flex; }
     .apikey-modal {
       background: #fff; border-radius: 18px;
-      padding: 24px 20px; width: 320px; margin: 0 16px;
+      padding: 24px 20px;
+      width: min(320px, calc(100vw - 32px));
       box-shadow: 0 8px 40px rgba(0,0,0,0.22);
     }
     .apikey-modal-title {
@@ -1424,7 +1455,7 @@
         </button>
         <span class="nav-title">AI 投資助理</span>
         <div class="nav-icons">
-          <button class="nav-icon" title="書籤" onclick="openSavedPanel()">
+          <button class="nav-icon" title="書籤" aria-label="開啟收藏清單" onclick="openSavedPanel()">
             <div class="bookmark-wrap">
               <svg width="19" height="23" viewBox="0 0 19 23" fill="none">
                 <path d="M4 1.5H15C16.1 1.5 17 2.4 17 3.5V21L9.5 17.5L2 21V3.5C2 2.4 2.9 1.5 4 1.5Z" stroke="#1b2d5b" stroke-width="1.6" stroke-linejoin="round"/>
@@ -1432,13 +1463,13 @@
               <span class="bookmark-badge" id="bookmarkBadge"></span>
             </div>
           </button>
-          <button class="nav-icon" title="歷史">
+          <button class="nav-icon" title="歷史" aria-label="查看歷史紀錄">
             <svg width="21" height="21" viewBox="0 0 21 21" fill="none">
               <circle cx="10.5" cy="10.5" r="9" stroke="#1b2d5b" stroke-width="1.6"/>
               <path d="M10.5 7V11L13.5 14" stroke="#1b2d5b" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </button>
-          <button class="nav-icon" title="更多">
+          <button class="nav-icon" title="更多" aria-label="更多選項">
             <svg width="21" height="5" viewBox="0 0 21 5" fill="none">
               <circle cx="2.5"  cy="2.5" r="2" fill="#1b2d5b"/>
               <circle cx="10.5" cy="2.5" r="2" fill="#1b2d5b"/>
@@ -1450,7 +1481,7 @@
     </div>
 
     <!-- ═══ SCROLLABLE CONTENT ═══ -->
-    <div class="body-scroll" id="bodyScroll">
+    <div class="body-scroll" id="bodyScroll" role="main" aria-label="主要內容區域">
 
       <!-- Hero -->
       <div class="hero">
@@ -1518,10 +1549,11 @@
           <input
             class="input-field" id="userInput"
             placeholder="試試：台積電現在值得加碼嗎？"
+            aria-label="輸入投資問題"
             autocomplete="off" autocorrect="off" spellcheck="false"
           />
           <span class="intent-badge" id="intentBadge"></span>
-          <button class="mic-btn" title="語音輸入">
+          <button class="mic-btn" title="語音輸入" aria-label="語音輸入">
             <svg width="17" height="22" viewBox="0 0 17 22" fill="none">
               <rect x="4.5" y="1" width="8" height="12" rx="4" stroke="currentColor" stroke-width="1.6"/>
               <path d="M1 11C1 15.4 4.4 19 8.5 19C12.6 19 16 15.4 16 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
@@ -1529,7 +1561,7 @@
             </svg>
           </button>
         </div>
-        <button class="send-btn" onclick="sendMessage()" title="傳送">
+        <button class="send-btn" onclick="sendMessage()" title="傳送" aria-label="傳送訊息">
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
             <path d="M4 10H16M16 10L10 4M16 10L10 16" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
@@ -1902,7 +1934,10 @@ function renderMktStocks(stocks) {
 
     return `
     <div class="mkt-stock-card${isWL ? ' in-watchlist' : ''}"
+         role="button" tabindex="0"
          onclick="sendChip('${escAttr(s.name)} ${escAttr(s.code)}')"
+         onkeydown="if(event.key==='Enter'||event.key===' '){sendChip('${escAttr(s.name)} ${escAttr(s.code)}');event.preventDefault();}"
+         aria-label="${escAttr(s.name)} ${escAttr(s.code)}，${escAttr(s.changePct)}，點擊查看分析"
          title="${escAttr(s.oneLiner||'')}">
       <div class="mkt-stock-top">
         <div style="display:flex;flex-direction:column;gap:3px;min-width:0;">
